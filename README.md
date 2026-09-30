@@ -5,7 +5,7 @@ No third-party runtime libraries: only AndroidX + Compose.
 
 **Features:** home screen with categories (Images, Videos, Audio, Documents, APKs), storage overview and shortcuts (Downloads, DCIM, Pictures, …) · folder browsing · sort by name/date/size ·
 search within a folder · show/hide hidden files · multi-select · rename · delete · copy · move (with live progress and cancel) · share · details (size, path, date, folder item count) · open with other apps ·
-new folder · dark mode.
+new folder · grid or list view with thumbnails (photos, video frames, album art, APK icons) · Recycle bin with restore (auto-empties after 30 days) · dark mode.
 
 ## Why it's fast and small
 
@@ -13,6 +13,7 @@ new folder · dark mode.
 |------|-----|
 | Fast folder loading | `java.nio` directory stream, one `stat` per entry, sorted in place on `Dispatchers.IO`; listing is cancelled the moment you navigate away |
 | Instant categories | Categories query the MediaStore index in a single call instead of crawling the disk |
+| Smooth thumbnails | Decoded on demand at 256 px for visible items only, 3 at a time, LRU-capped (≤ 40 MB), cancelled when scrolled away |
 | Low memory | Each entry is a 5-field object (no `File`, `Uri`, thumbnails, or icons cached); no image-loading library |
 | No lag on huge folders | `LazyColumn` with stable keys + `contentType`; only visible rows are composed; search/sort run off the main thread |
 | Small APK | R8 minify + resource shrinking, no extra libraries, vector-only icons, dependency metadata stripped |
@@ -66,6 +67,17 @@ This permission is not accepted on Google Play without a policy exception, so di
 - **App name:** `app/src/main/res/values/strings.xml`.
 - **Colors:** `ui/Theme.kt` (static palette; swap in `dynamicLightColorScheme` for Material You).
 - **Dependency versions:** `gradle/libs.versions.toml` (Dependabot is pre-configured: one grouped monthly PR for Actions, monthly Gradle PRs; see `.github/dependabot.yml` for what is deliberately ignored).
+
+## Installing APKs and "Show in folder"
+
+Tap an `.apk` to install it with the system installer. The first time, Android asks you to allow "Install unknown apps" for Lite Files;
+enable it and tap the APK again. In a category (Images, Videos, …), select a file and use **More → Show in folder** to jump to where it lives.
+
+## Recycle bin
+
+Deleting moves files to a hidden `.LiteFilesTrash` folder on the same storage (instant, no copying) instead of erasing them.
+Open **Recycle bin** on the home screen to restore or permanently delete items, or use its menu to empty it.
+Items are removed automatically after 30 days. Files deleted by other apps do not go there, and deleted files keep using space until the bin is emptied.
 
 ## Project docs
 

@@ -10,10 +10,13 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
@@ -38,6 +41,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
@@ -57,14 +61,15 @@ fun FileRow(
     selected: Boolean,
     selecting: Boolean,
     showFolder: Boolean,
+    deleted: Boolean,
     dateFormat: DateFormat,
     onClick: (FileItem) -> Unit,
     onLongClick: (FileItem) -> Unit,
 ) {
     val ctx: Context = LocalContext.current
     val kind = remember(item) { item.kind }
-    val subtitle = remember(item, showFolder) {
-        val date = dateFormat.format(Date(item.modified))
+    val subtitle = remember(item, showFolder, deleted) {
+        val date = (if (deleted) "Deleted " else "") + dateFormat.format(Date(item.modified))
         val base = if (item.isDir) date else "$date · ${Formatter.formatShortFileSize(ctx, item.size)}"
         // in category lists, show which folder the file lives in
         if (showFolder) item.path.substringBeforeLast('/').substringAfterLast('/') + " · " + base else base
@@ -80,15 +85,16 @@ fun FileRow(
             .padding(horizontal = 16.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Box(
-            Modifier
+        FileThumb(
+            item = item,
+            kind = kind,
+            modifier = Modifier
                 .size(44.dp)
                 .clip(RoundedCornerShape(12.dp))
                 .background(tint.copy(alpha = 0.15f)),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(kindIcon(kind), contentDescription = null, tint = tint)
-        }
+            tint = tint,
+            iconSize = 24.dp,
+        )
         Spacer(Modifier.width(14.dp))
         Column(Modifier.weight(1f)) {
             Text(item.name, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -100,6 +106,67 @@ fun FileRow(
             )
         }
         if (selecting) Checkbox(checked = selected, onCheckedChange = null)
+    }
+}
+
+/** Grid cell: big square thumbnail (or type icon) with the name underneath. */
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun FileTile(
+    item: FileItem,
+    selected: Boolean,
+    selecting: Boolean,
+    onClick: (FileItem) -> Unit,
+    onLongClick: (FileItem) -> Unit,
+) {
+    val kind = remember(item) { item.kind }
+    val tint = kindColor(kind)
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(14.dp))
+            .combinedClickable(onClick = { onClick(item) }, onLongClick = { onLongClick(item) })
+            .padding(4.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Box(Modifier.fillMaxWidth().aspectRatio(1f)) {
+            FileThumb(
+                item = item,
+                kind = kind,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(tint.copy(alpha = 0.15f)),
+                tint = tint,
+                iconSize = 36.dp,
+            )
+            if (selected) {
+                Box(
+                    Modifier
+                        .fillMaxSize()
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.28f)),
+                )
+            }
+            if (selecting) {
+                Checkbox(
+                    checked = selected,
+                    onCheckedChange = null,
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .padding(4.dp)
+                        .background(Color.White.copy(alpha = 0.85f), CircleShape),
+                )
+            }
+        }
+        Text(
+            item.name,
+            style = MaterialTheme.typography.labelMedium,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(top = 4.dp),
+        )
     }
 }
 

@@ -18,6 +18,7 @@ import java.nio.file.Files
 import java.nio.file.LinkOption
 import java.nio.file.Path
 import java.nio.file.attribute.BasicFileAttributes
+import kotlin.random.Random
 
 enum class SortBy { NAME, DATE, SIZE }
 
@@ -195,10 +196,150 @@ object FileRepository {
 
     // ---------- Operations (return number of failures) ----------
 
-    suspend fun delete(paths: List<String>): Int = withContext(Dispatchers.IO) {
+    // ---------- Recycle bin ----------
+    //
+    // Each storage volume gets a hidden folder <volume>/.LiteFilesTrash (with a .nomedia file so gallery/music
+    // apps ignore it). A trashed item is renamed (instant, same volume) to <id>, plus a tiny <id>.meta text file
+    // holding its original absolute path. <id> = "<deletedAtMillis>-<hex>", so age is known from the name alone.
+
+    const val TRASH_DIR = ".LiteFilesTrash"
+    private const val TRASH_MAX_AGE_MS = 30L * 24 * 60 * 60 * 1000
+
+    class TrashResult(val moved: Int, val deleted: Int, val failed: Int)
+
+    fun isInTrash(path: String): Boolean = path.contains("/$TRASH_DIR/") || path.endsWith("/$TRASH_DIR")
+
+    private fun purgeItem(f: File): Boolean {
+        val ok = f.deleteRecursively()
+        if (ok && isInTrash(f.path)) f.parentFile?.let { File(it, f.name + ".meta").delete() }
+        return ok
+    }
+
+    /** Moves [paths] to the bin of their volume. Anything already inside a bin is deleted for good. */
+    suspend fun moveToTrash(paths: List<String>, roots: List<File>): TrashResult = withContext(Dispatchers.IO) {
+        var moved = 0
+        var deleted = 0
         var failed = 0
-        for (p in paths) if (!File(p).deleteRecursively()) failed++
+        val rootPaths = roots.map { it.path }
+        for (p in paths) {
+            try {
+                if (isInTrash(p)) {
+                    if (purgeItem(File(p))) deleted++ else failed++
+                    continue
+                }
+                val root = rootPaths.firstOrNull { p.startsWith("$it/") }
+                val src = File(p)
+                if (root == null || !src.exists()) { failed++; continue }
+
+                val bin = File(root, TRASH_DIR)
+                bin.mkdirs()
+                val noMedia = File(bin, ".nomedia")
+                if (!noMedia.exists()) noMedia.createNewFile()
+
+                var id: String
+                do {
+                    id = "${System.currentTimeMillis()}-${Random.nextInt(0x10000).toString(16)}"
+                } while (File(bin, id).exists()) // never rename over an existing item
+                val meta = File(bin, "$id.meta")
+                meta.writeText(p)
+                if (src.renameTo(File(bin, id))) moved++ else { meta.delete(); failed++ }
+            } catch (e: IOException) {
+                failed++
+            } catch (e: SecurityException) {
+                failed++
+            }
+        }
+        TrashResult(moved, deleted, failed)
+    }
+
+    /** Everything in the bins of [roots] as list items: name = original name, modified = deletion time. */
+    suspend fun trashItems(roots: List<File>, sortBy: SortBy, ascending: Boolean): List<FileItem> =
+        withContext(Dispatchers.IO) {
+            val out = ArrayList<FileItem>()
+            for (root in roots) {
+                val bin = File(root, TRASH_DIR)
+                if (!bin.isDirectory) continue
+                Files.newDirectoryStream(bin.toPath()).use { stream ->
+                    for (p in stream) {
+                        ensureActive()
+                        val id = p.fileName.toString()
+                        if (id.endsWith(".meta") || id == ".nomedia") continue
+                        val a = try {
+                            Files.readAttributes(p, BasicFileAttributes::class.java, LinkOption.NOFOLLOW_LINKS)
+                        } catch (e: IOException) {
+                            continue
+                        }
+                        val orig = try { File(bin, "$id.meta").readText().trim() } catch (e: IOException) { "" }
+                        val name = orig.substringAfterLast('/').ifEmpty { id }
+                        val deletedAt = id.substringBefore('-').toLongOrNull() ?: a.lastModifiedTime().toMillis()
+                        out.add(
+                            FileItem(name, p.toString(), a.isDirectory, if (a.isDirectory) 0L else a.size(), deletedAt),
+                        )
+                    }
+                }
+            }
+            ensureActive()
+            out.sortWith(comparator(sortBy, ascending))
+            out
+        }
+
+    /** Puts bin items back where they came from (recreating folders, renaming on conflict). Returns failures. */
+    suspend fun restore(paths: List<String>): Int = withContext(Dispatchers.IO) {
+        var failed = 0
+        for (p in paths) {
+            try {
+                val item = File(p)
+                val bin = item.parentFile
+                val volRoot = bin?.parentFile
+                if (bin == null || volRoot == null || !item.exists()) { failed++; continue }
+                val meta = File(bin, item.name + ".meta")
+                val orig = try { meta.readText().trim() } catch (e: IOException) { "" }
+                val destDir = if (orig.isNotEmpty()) File(orig).parentFile ?: volRoot else File(volRoot, "Restored")
+                val name = if (orig.isNotEmpty()) File(orig).name else item.name
+                destDir.mkdirs()
+                val target = uniqueTarget(destDir, name)
+                if (item.renameTo(target)) meta.delete() else failed++
+            } catch (e: IOException) {
+                failed++
+            } catch (e: SecurityException) {
+                failed++
+            }
+        }
         failed
+    }
+
+    suspend fun deleteForever(paths: List<String>): Int = withContext(Dispatchers.IO) {
+        var failed = 0
+        for (p in paths) if (!purgeItem(File(p))) failed++
+        failed
+    }
+
+    suspend fun emptyBin(roots: List<File>) = withContext(Dispatchers.IO) {
+        for (root in roots) {
+            File(root, TRASH_DIR).listFiles()?.forEach { if (it.name != ".nomedia") it.deleteRecursively() }
+        }
+    }
+
+    /** Deletes bin items older than 30 days (age is parsed from the item name: no file reads). */
+    suspend fun purgeExpired(roots: List<File>) = withContext(Dispatchers.IO) {
+        val now = System.currentTimeMillis()
+        for (root in roots) {
+            val bin = File(root, TRASH_DIR)
+            bin.list()?.forEach { name ->
+                if (name.endsWith(".meta") || name == ".nomedia") return@forEach
+                val at = name.substringBefore('-').toLongOrNull() ?: return@forEach
+                if (now - at > TRASH_MAX_AGE_MS) {
+                    File(bin, name).deleteRecursively()
+                    File(bin, "$name.meta").delete()
+                }
+            }
+        }
+    }
+
+    suspend fun trashCount(roots: List<File>): Int = withContext(Dispatchers.IO) {
+        roots.sumOf { root ->
+            File(root, TRASH_DIR).list()?.count { !it.endsWith(".meta") && it != ".nomedia" } ?: 0
+        }
     }
 
     suspend fun rename(file: File, newName: String): Boolean = withContext(Dispatchers.IO) {

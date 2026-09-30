@@ -43,7 +43,7 @@ fun App(vm: BrowserViewModel) {
         val dir = state.dir
         when {
             !state.hasAccess -> PermissionScreen()
-            dir == null && state.category == null -> HomeScreen(state, vm, snackbar)
+            dir == null && state.category == null && !state.trash -> HomeScreen(state, vm, snackbar)
             else -> BrowserScreen(state, dir, vm, snackbar)
         }
     }

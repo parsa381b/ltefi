@@ -9,6 +9,62 @@ Categories: **Added** (new features) · **Changed** (behavior/config changes) ·
 ## [Unreleased]
 _Nothing yet. Add new changes here as they are made, then move them under a new version heading when releasing._
 
+## [1.5.0] - 2026-10-01
+Thumbnails for audio (cover art) and APKs (app icons).
+
+### Added
+- **Audio cover art:** songs show their embedded album art, or a `cover.jpg`/`folder.jpg`-style image from the same folder, in both list and grid view. Songs without any art keep the music-note icon.
+- **APK icons:** `.apk` files show the app's launcher icon (masked to your device's icon shape, shown whole with a little padding). APKs that can't be read keep the Android icon.
+- Both use the same loader as photos and videos: decoded at 256 px only for what is on screen, three at a time, cancelled when you scroll past, cached in memory, failures remembered. No new library.
+
+### Changed
+- `Thumbnails.load()` now takes the file `Kind` (and an application `Context`) instead of a video flag; `FileThumb` decides per kind whether to crop (photos, video, audio) or fit (APK icons).
+- App version bumped to 1.5.0 (`versionCode` 7).
+
+### Docs
+- `README.md` and `PROJECT_CONTEXT.md` updated (thumbnail design decision and limitations).
+
+## [1.4.0] - 2026-10-01
+"Show in folder" for category files, and installing APKs from inside the app.
+
+### Added
+- **Show in folder:** in a category (Images, Videos, Audio, Documents, APKs), select one file and choose More → Show in folder. The app opens the file's folder, scrolls to the file and selects it so you can see it. (The menu item is greyed out unless exactly one file is selected; Back from there goes to the parent folder, not back to the category.) If the file is a dot-file, "Show hidden files" is switched on automatically so it can be found.
+- **Install APKs:** tapping an `.apk` (in a folder or in the APKs category) now opens the system installer. The first time, Android needs "Install unknown apps" allowed for Lite Files: the app opens that settings page and asks you to tap the APK again.
+- New permission `REQUEST_INSTALL_PACKAGES` in the manifest.
+
+### Changed
+- `openFile()` routes `.apk` files to a new `installApk()` (installer via FileProvider + `ACTION_VIEW`) instead of the generic "open with" path.
+- `BrowserState` gains `reveal`; `BrowserViewModel` gains `showInFolder()` and `finishReveal()`; the file list scrolls to and selects the revealed file once its folder has loaded.
+- App version bumped to 1.4.0 (`versionCode` 6).
+
+### Docs
+- `README.md` and `PROJECT_CONTEXT.md` updated (permissions, features, design decisions, limitations).
+
+## [1.3.0] - 2026-10-01
+List/grid view with image and video thumbnails, and a Recycle bin instead of permanent delete.
+
+### Added
+- **List/grid toggle** in the top bar (works in folders, categories and the Recycle bin). The choice is remembered between launches, and your scroll position is kept when switching.
+- **Thumbnails for images and videos** in both views (videos get a play badge); other file types keep their colored type icon. Thumbnails are decoded on demand at 256 px, only for what is on screen, three at a time, cancelled when you scroll past, and cached in memory (about 10% of the heap, 8-40 MB). Files that can't be decoded fall back to the icon. No image library was added.
+- **Recycle bin:** Delete now moves items to a hidden `.LiteFilesTrash` folder on the same storage volume (instant, no copying), hidden from gallery and music apps.
+  - Home screen card "Recycle bin" shows how many items it holds.
+  - Inside the bin: select items, then **Restore** (back to the original folder; folders are recreated, name conflicts get `(1)`) or **Delete** (permanent). Top-bar menu has **Empty Recycle bin**.
+  - Items are removed automatically after **30 days**.
+  - Deleting something that is already inside a bin (for example via "Show hidden files") deletes it permanently, and the confirmation says so.
+- New files: `ui/Thumbnails.kt` (thumbnail loader + `FileThumb`).
+
+### Changed
+- The delete confirmation now reads "Move N item(s) to Recycle bin?" and the snackbar confirms where they went.
+- `FileRepository.delete()` replaced by `moveToTrash()`, `restore()`, `deleteForever()`, `emptyBin()`, `purgeExpired()`, `trashCount()` and `trashItems()`.
+- `BrowserState` gains `viewGrid`, `trash` and `trashCount`; `BrowserViewModel` gains `toggleView()`, `openTrash()`, `restore()`, `deleteForever()` and `emptyBin()`. The view mode is stored in SharedPreferences.
+- `FileRow` shows thumbnails and takes a `deleted` flag (bin rows say "Deleted <date>"); new `FileTile` for grid cells.
+- The top bar now has four icons (search, view toggle, sort, more).
+- Deleted files keep using storage until the bin is emptied or they expire.
+- App version bumped to 1.3.0 (`versionCode` 5).
+
+### Docs
+- `README.md` and `PROJECT_CONTEXT.md` updated (features, file map, design decisions, limitations).
+
 ## [1.2.1] - 2026-09-30
 CI and dependency housekeeping after the first successful GitHub build. No app behavior changes.
 

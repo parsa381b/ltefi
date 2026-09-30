@@ -18,6 +18,10 @@ private fun mimeOf(file: File): String =
 
 fun openFile(ctx: Context, path: String) {
     val file = File(path)
+    if (file.extension.equals("apk", ignoreCase = true)) {
+        installApk(ctx, file)
+        return
+    }
     val intent = Intent(Intent.ACTION_VIEW)
         .setDataAndType(uriFor(ctx, file), mimeOf(file))
         .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
@@ -25,6 +29,38 @@ fun openFile(ctx: Context, path: String) {
         ctx.startActivity(intent)
     } catch (e: ActivityNotFoundException) {
         Toast.makeText(ctx, "No app can open this file", Toast.LENGTH_SHORT).show()
+    }
+}
+
+private const val APK_MIME = "application/vnd.android.package-archive"
+
+/**
+ * Hands an APK to the system installer. First time only, Android requires the user to allow
+ * "Install unknown apps" for this app: we open that settings page and ask them to tap the APK again.
+ */
+private fun installApk(ctx: Context, file: File) {
+    if (!ctx.packageManager.canRequestPackageInstalls()) {
+        Toast.makeText(
+            ctx,
+            "Turn on 'Install unknown apps' for Lite Files, then tap the APK again",
+            Toast.LENGTH_LONG,
+        ).show()
+        try {
+            ctx.startActivity(
+                Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, "package:${ctx.packageName}".toUri()),
+            )
+        } catch (e: ActivityNotFoundException) {
+            // no settings screen to open: the toast above is all we can do
+        }
+        return
+    }
+    val intent = Intent(Intent.ACTION_VIEW)
+        .setDataAndType(uriFor(ctx, file), APK_MIME)
+        .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+    try {
+        ctx.startActivity(intent)
+    } catch (e: ActivityNotFoundException) {
+        Toast.makeText(ctx, "Can't start the installer", Toast.LENGTH_SHORT).show()
     }
 }
 

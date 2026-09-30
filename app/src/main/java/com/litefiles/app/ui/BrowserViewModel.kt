@@ -1,6 +1,7 @@
 package com.litefiles.app.ui
 
 import android.app.Application
+import android.content.Context
 import android.os.Environment
 import androidx.compose.runtime.Immutable
 import androidx.lifecycle.AndroidViewModel
@@ -46,6 +47,10 @@ data class BrowserState(
     val dir: File? = null,
     /** non-null = showing a category (Images, Videos, ...) instead of a folder */
     val category: Category? = null,
+    /** true = showing the Recycle bin */
+    val trash: Boolean = false,
+    /** file to scroll to and select once its folder has loaded ("Show in folder") */
+    val reveal: String? = null,
     /** what the list shows (already filtered by [query]) */
     val items: List<FileItem> = emptyList(),
     val loading: Boolean = false,
@@ -57,6 +62,8 @@ data class BrowserState(
     val query: String? = null,
     val selected: Set<String> = emptySet(),
     val clipboard: Clipboard? = null,
+    val viewGrid: Boolean = false,
+    val trashCount: Int = 0,
     val op: Op? = null,
     val details: Details? = null,
     val message: String? = null,
@@ -64,8 +71,13 @@ data class BrowserState(
 
 class BrowserViewModel(private val app: Application) : AndroidViewModel(app) {
 
+    private val prefs = app.getSharedPreferences("lite_files", Context.MODE_PRIVATE)
+
     private val _state = MutableStateFlow(
-        BrowserState(hasAccess = Environment.isExternalStorageManager()),
+        BrowserState(
+            hasAccess = Environment.isExternalStorageManager(),
+            viewGrid = prefs.getBoolean("grid", false),
+        ),
     )
     val state: StateFlow<BrowserState> = _state.asStateFlow()
 
@@ -88,16 +100,19 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app) {
     fun onResume() {
         val access = Environment.isExternalStorageManager()
         viewModelScope.launch {
-            val (vols, shortcuts) = withContext(Dispatchers.IO) {
+            val (vols, shortcuts, binCount) = withContext(Dispatchers.IO) {
                 if (!access) {
-                    emptyList<Volume>() to emptyList<Shortcut>()
+                    Triple(emptyList<Volume>(), emptyList<Shortcut>(), 0)
                 } else {
                     val v = FileRepository.volumes(app)
-                    v to FileRepository.shortcuts(v.firstOrNull { it.primary }?.root)
+                    val roots = v.map { it.root }
+                    FileRepository.purgeExpired(roots) // bin items older than 30 days
+                    Triple(v, FileRepository.shortcuts(v.firstOrNull { it.primary }?.root), FileRepository.trashCount(roots))
                 }
             }
-            _state.update { it.copy(hasAccess = access, volumes = vols, shortcuts = shortcuts) }
-            if (access && (_state.value.dir != null || _state.value.category != null)) refresh()
+            _state.update { it.copy(hasAccess = access, volumes = vols, shortcuts = shortcuts, trashCount = binCount) }
+            val s = _state.value
+            if (access && (s.dir != null || s.category != null || s.trash)) refresh()
         }
     }
 
@@ -113,6 +128,8 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app) {
             it.copy(
                 dir = dir,
                 category = null,
+                trash = false,
+                reveal = null,
                 items = emptyList(),
                 selected = emptySet(),
                 query = null,
@@ -134,6 +151,8 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app) {
             it.copy(
                 dir = null,
                 category = cat,
+                trash = false,
+                reveal = null,
                 items = emptyList(),
                 selected = emptySet(),
                 query = null,
@@ -146,11 +165,54 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app) {
         loadCategory(cat)
     }
 
+    /** From a category: open the file's folder, scroll to it and select it. */
+    fun showInFolder(path: String) {
+        val file = File(path)
+        val parent = file.parentFile ?: return
+        // a dot-file would be filtered out of the listing, so make it visible first
+        if (file.name.startsWith('.') && !_state.value.showHidden) {
+            _state.update { it.copy(showHidden = true) }
+        }
+        open(parent)
+        _state.update { it.copy(reveal = path) }
+    }
+
+    /** Called by the list once it has scrolled to the revealed file (or found it missing). */
+    fun finishReveal(path: String, found: Boolean) {
+        _state.update {
+            if (it.reveal != path) it
+            else it.copy(reveal = null, selected = if (found) setOf(path) else it.selected)
+        }
+    }
+
+    fun openTrash() {
+        loadJob?.cancel()
+        filterJob?.cancel()
+        all = emptyList()
+        if (savedSort == null) savedSort = _state.value.sortBy to _state.value.ascending
+        _state.update {
+            it.copy(
+                dir = null,
+                category = null,
+                trash = true,
+                reveal = null,
+                items = emptyList(),
+                selected = emptySet(),
+                query = null,
+                error = null,
+                loading = true,
+                sortBy = SortBy.DATE, // newest deletions first
+                ascending = false,
+            )
+        }
+        loadTrash()
+    }
+
     fun refresh() {
         val s = _state.value
         val cat = s.category
         val dir = s.dir
-        if (cat != null) loadCategory(cat) else if (dir != null) load(dir)
+        if (s.trash) loadTrash() else if (cat != null) loadCategory(cat) else if (dir != null) load(dir)
     }
 
     /** Handles the system Back button. Returns false when there is nothing left to go back to. */
@@ -160,7 +222,7 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app) {
         when {
             s.selected.isNotEmpty() -> clearSelection()
             s.query != null -> setQuery(null)
-            s.category != null -> open(null)
+            s.category != null || s.trash -> open(null)
             dir == null -> return false
             else -> {
                 val parent = dir.parentFile
@@ -206,6 +268,25 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app) {
             } catch (e: Exception) {
                 all = emptyList()
                 _state.update { it.copy(items = emptyList(), loading = false, error = "Can't load ${cat.label}") }
+            }
+        }
+    }
+
+    private fun loadTrash() {
+        loadJob?.cancel()
+        loadJob = viewModelScope.launch {
+            _state.update { it.copy(loading = true, error = null) }
+            val s = _state.value
+            try {
+                val list = FileRepository.trashItems(s.volumes.map { it.root }, s.sortBy, s.ascending)
+                all = list
+                val visible = filter(list, _state.value.query)
+                _state.update { it.copy(items = visible, loading = false) }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                all = emptyList()
+                _state.update { it.copy(items = emptyList(), loading = false, error = "Can't open the Recycle bin") }
             }
         }
     }
@@ -319,11 +400,57 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app) {
         _state.update { it.copy(details = null) }
     }
 
+    private fun roots(): List<File> = _state.value.volumes.map { it.root }
+
+    /** Delete = move to the Recycle bin (items already inside a bin are removed for good). */
     fun delete() {
         val paths = _state.value.selected.toList()
+        val roots = roots()
         runOp("Deleting…") {
-            val failed = FileRepository.delete(paths)
-            if (failed == 0) "Deleted ${paths.size} item(s)" else "$failed item(s) couldn't be deleted"
+            val r = FileRepository.moveToTrash(paths, roots)
+            when {
+                r.failed > 0 -> "${r.failed} item(s) couldn't be deleted"
+                r.deleted == 0 -> "Moved ${r.moved} item(s) to Recycle bin"
+                else -> "Deleted ${r.moved + r.deleted} item(s)"
+            }
+        }
+    }
+
+    fun restore() {
+        val paths = _state.value.selected.toList()
+        runOp("Restoring…") {
+            val failed = FileRepository.restore(paths)
+            if (failed == 0) "Restored ${paths.size} item(s)" else "$failed item(s) couldn't be restored"
+        }
+    }
+
+    fun deleteForever() {
+        val paths = _state.value.selected.toList()
+        runOp("Deleting…") {
+            val failed = FileRepository.deleteForever(paths)
+            if (failed == 0) "Deleted ${paths.size} item(s) permanently" else "$failed item(s) couldn't be deleted"
+        }
+    }
+
+    fun emptyBin() {
+        val roots = roots()
+        runOp("Emptying Recycle bin…") {
+            FileRepository.emptyBin(roots)
+            "Recycle bin emptied"
+        }
+    }
+
+    fun toggleView() {
+        val grid = !_state.value.viewGrid
+        prefs.edit().putBoolean("grid", grid).apply()
+        _state.update { it.copy(viewGrid = grid) }
+    }
+
+    private fun refreshTrashCount() {
+        val roots = roots()
+        viewModelScope.launch {
+            val n = withContext(Dispatchers.IO) { FileRepository.trashCount(roots) }
+            _state.update { it.copy(trashCount = n) }
         }
     }
 
@@ -352,6 +479,7 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app) {
             }
             _state.update { it.copy(op = null, message = msg, selected = emptySet()) }
             refresh()
+            refreshTrashCount()
         }
     }
 }

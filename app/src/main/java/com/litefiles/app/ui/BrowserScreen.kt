@@ -5,6 +5,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -12,6 +13,10 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items as gridItems
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -23,7 +28,12 @@ import androidx.compose.material.icons.filled.ContentCut
 import androidx.compose.material.icons.filled.CreateNewFolder
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.FolderOpen
+import androidx.compose.material.icons.filled.DeleteForever
+import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Restore
+import androidx.compose.material.icons.filled.ViewList
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
@@ -69,6 +79,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.litefiles.app.data.FileItem
+import com.litefiles.app.data.FileRepository
 import com.litefiles.app.data.SortBy
 import com.litefiles.app.util.openFile
 import com.litefiles.app.util.shareFiles
@@ -79,6 +90,7 @@ private sealed interface Prompt {
     data object NewFolder : Prompt
     data class Rename(val path: String, val name: String) : Prompt
     data object Delete : Prompt
+    data object EmptyBin : Prompt
 }
 
 @Composable
@@ -90,10 +102,25 @@ fun BrowserScreen(state: BrowserState, dir: File?, vm: BrowserViewModel, snackba
     BackHandler { vm.goUp() }
 
     Scaffold(
-        topBar = { BrowserTopBar(state, dir, vm, onNewFolder = { prompt = Prompt.NewFolder }) },
+        topBar = {
+            BrowserTopBar(
+                state, dir, vm,
+                onNewFolder = { prompt = Prompt.NewFolder },
+                onEmptyBin = { prompt = Prompt.EmptyBin },
+            )
+        },
         bottomBar = {
             val cb = state.clipboard
             when {
+                state.selected.isNotEmpty() && state.trash -> Surface(tonalElevation = 3.dp) {
+                    Row(
+                        Modifier.fillMaxWidth().navigationBarsPadding().padding(vertical = 6.dp),
+                        horizontalArrangement = Arrangement.SpaceEvenly,
+                    ) {
+                        BarAction(Icons.Filled.Restore, "Restore") { vm.restore() }
+                        BarAction(Icons.Filled.DeleteForever, "Delete") { prompt = Prompt.Delete }
+                    }
+                }
                 state.selected.isNotEmpty() -> Surface(tonalElevation = 3.dp) {
                     Row(
                         Modifier.fillMaxWidth().navigationBarsPadding().padding(vertical = 6.dp),
@@ -116,6 +143,12 @@ fun BrowserScreen(state: BrowserState, dir: File?, vm: BrowserViewModel, snackba
                                         val p = state.selected.first()
                                         prompt = Prompt.Rename(p, File(p).name)
                                     },
+                                )
+                                if (state.category != null) DropdownMenuItem(
+                                    text = { Text("Show in folder") },
+                                    leadingIcon = { Icon(Icons.Filled.FolderOpen, null) },
+                                    enabled = state.selected.size == 1,
+                                    onClick = { menuOpen = false; vm.showInFolder(state.selected.first()) },
                                 )
                                 DropdownMenuItem(
                                     text = { Text("Details") },
@@ -159,12 +192,25 @@ fun BrowserScreen(state: BrowserState, dir: File?, vm: BrowserViewModel, snackba
         is Prompt.Rename -> NameDialog("Rename", p.name, "Rename", { prompt = null }) {
             vm.rename(p.path, it); prompt = null
         }
-        Prompt.Delete -> ConfirmDialog(
-            title = "Delete ${state.selected.size} item(s)?",
-            message = "This can't be undone.",
-            confirmLabel = "Delete",
+        Prompt.Delete -> {
+            val n = state.selected.size
+            val permanent = state.trash || state.selected.any { FileRepository.isInTrash(it) }
+            ConfirmDialog(
+                title = if (permanent) "Delete $n item(s) permanently?" else "Move $n item(s) to Recycle bin?",
+                message = if (permanent) "This can't be undone." else "You can restore them from the Recycle bin for 30 days.",
+                confirmLabel = if (permanent) "Delete" else "Move",
+                onDismiss = { prompt = null },
+            ) {
+                if (state.trash) vm.deleteForever() else vm.delete()
+                prompt = null
+            }
+        }
+        Prompt.EmptyBin -> ConfirmDialog(
+            title = "Empty Recycle bin?",
+            message = "Everything in the Recycle bin will be deleted permanently.",
+            confirmLabel = "Empty",
             onDismiss = { prompt = null },
-        ) { vm.delete(); prompt = null }
+        ) { vm.emptyBin(); prompt = null }
         null -> Unit
     }
 }
@@ -172,18 +218,41 @@ fun BrowserScreen(state: BrowserState, dir: File?, vm: BrowserViewModel, snackba
 @Composable
 private fun FileList(state: BrowserState, dir: File?, vm: BrowserViewModel, modifier: Modifier) {
     val ctx = LocalContext.current
-    // scroll-state / scroll-restore key: the folder path, or "cat:<NAME>" for a category
-    val dirPath = state.category?.let { "cat:${it.name}" } ?: dir?.path ?: ""
+    // scroll-state / scroll-restore key: "trash", "cat:<NAME>" for a category, or the folder path
+    val dirPath = when {
+        state.trash -> "trash"
+        state.category != null -> "cat:${state.category.name}"
+        else -> dir?.path ?: ""
+    }
 
     // Fresh scroll state per folder; restored to the saved position when coming back "up".
     key(dirPath) {
         val listState = rememberLazyListState()
+        val gridState = rememberLazyGridState()
+        val grid = state.viewGrid
         var pending by remember { mutableIntStateOf(vm.scrollPositions.remove(dirPath) ?: 0) }
         val hasItems = state.items.isNotEmpty()
         LaunchedEffect(hasItems) {
             if (hasItems && pending > 0) {
-                listState.scrollToItem(pending.coerceAtMost(state.items.lastIndex))
+                val target = pending.coerceAtMost(state.items.lastIndex)
+                if (grid) gridState.scrollToItem(target) else listState.scrollToItem(target)
                 pending = 0
+            }
+        }
+        // keep the reading position when switching between list and grid
+        LaunchedEffect(grid) {
+            if (grid) gridState.scrollToItem(listState.firstVisibleItemIndex)
+            else listState.scrollToItem(gridState.firstVisibleItemIndex)
+        }
+        // "Show in folder": once the folder has loaded, scroll to the file and select it
+        val reveal = state.reveal
+        LaunchedEffect(reveal, hasItems) {
+            if (reveal != null && hasItems) {
+                val idx = state.items.indexOfFirst { it.path == reveal }
+                if (idx >= 0) {
+                    if (grid) gridState.scrollToItem(idx) else listState.scrollToItem(idx)
+                }
+                vm.finishReveal(reveal, found = idx >= 0)
             }
         }
 
@@ -193,10 +262,12 @@ private fun FileList(state: BrowserState, dir: File?, vm: BrowserViewModel, modi
         // Stable lambdas: rows don't recompose just because unrelated state changed.
         val onClick = remember(dirPath) {
             { item: FileItem ->
+                val s = stateRef.value
                 when {
-                    stateRef.value.selected.isNotEmpty() -> vm.toggleSelect(item.path)
+                    s.selected.isNotEmpty() || s.trash -> vm.toggleSelect(item.path) // bin items can't be opened
                     item.isDir -> {
-                        vm.scrollPositions[dirPath] = listState.firstVisibleItemIndex
+                        vm.scrollPositions[dirPath] =
+                            if (s.viewGrid) gridState.firstVisibleItemIndex else listState.firstVisibleItemIndex
                         vm.open(File(item.path))
                     }
                     else -> openFile(ctx, item.path)
@@ -206,17 +277,37 @@ private fun FileList(state: BrowserState, dir: File?, vm: BrowserViewModel, modi
         val onLongClick = remember(dirPath) { { item: FileItem -> vm.toggleSelect(item.path) } }
 
         Box(modifier.fillMaxSize()) {
-            LazyColumn(Modifier.fillMaxSize(), state = listState) {
-                items(state.items, key = { it.path }, contentType = { it.isDir }) { item ->
-                    FileRow(
-                        item = item,
-                        selected = item.path in state.selected,
-                        selecting = state.selected.isNotEmpty(),
-                        showFolder = state.category != null,
-                        dateFormat = dateFormat,
-                        onClick = onClick,
-                        onLongClick = onLongClick,
-                    )
+            if (grid) {
+                LazyVerticalGrid(
+                    columns = GridCells.Adaptive(104.dp),
+                    state = gridState,
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(8.dp),
+                ) {
+                    gridItems(state.items, key = { it.path }, contentType = { it.isDir }) { item ->
+                        FileTile(
+                            item = item,
+                            selected = item.path in state.selected,
+                            selecting = state.selected.isNotEmpty(),
+                            onClick = onClick,
+                            onLongClick = onLongClick,
+                        )
+                    }
+                }
+            } else {
+                LazyColumn(Modifier.fillMaxSize(), state = listState) {
+                    items(state.items, key = { it.path }, contentType = { it.isDir }) { item ->
+                        FileRow(
+                            item = item,
+                            selected = item.path in state.selected,
+                            selecting = state.selected.isNotEmpty(),
+                            showFolder = state.category != null,
+                            deleted = state.trash,
+                            dateFormat = dateFormat,
+                            onClick = onClick,
+                            onLongClick = onLongClick,
+                        )
+                    }
                 }
             }
             if (state.loading) LinearProgressIndicator(Modifier.fillMaxWidth().align(Alignment.TopCenter))
@@ -224,6 +315,7 @@ private fun FileList(state: BrowserState, dir: File?, vm: BrowserViewModel, modi
                 Text(
                     state.error ?: when {
                         !state.query.isNullOrBlank() -> "No results"
+                        state.trash -> "Recycle bin is empty"
                         state.category != null -> "No files found"
                         else -> "Empty folder"
                     },
@@ -237,7 +329,13 @@ private fun FileList(state: BrowserState, dir: File?, vm: BrowserViewModel, modi
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun BrowserTopBar(state: BrowserState, dir: File?, vm: BrowserViewModel, onNewFolder: () -> Unit) {
+private fun BrowserTopBar(
+    state: BrowserState,
+    dir: File?,
+    vm: BrowserViewModel,
+    onNewFolder: () -> Unit,
+    onEmptyBin: () -> Unit,
+) {
     val n = state.selected.size
     var sortOpen by remember { mutableStateOf(false) }
     var moreOpen by remember { mutableStateOf(false) }
@@ -256,10 +354,14 @@ private fun BrowserTopBar(state: BrowserState, dir: File?, vm: BrowserViewModel,
         )
 
         else -> {
-            val title = remember(dir, state.volumes, state.category) {
-                state.category?.label
-                    ?: dir?.let { d -> state.volumes.firstOrNull { it.root.path == d.path }?.name ?: d.name }
-                    ?: ""
+            val title = remember(dir, state.volumes, state.category, state.trash) {
+                if (state.trash) {
+                    "Recycle bin"
+                } else {
+                    state.category?.label
+                        ?: dir?.let { d -> state.volumes.firstOrNull { it.root.path == d.path }?.name ?: d.name }
+                        ?: ""
+                }
             }
             TopAppBar(
                 title = {
@@ -279,6 +381,12 @@ private fun BrowserTopBar(state: BrowserState, dir: File?, vm: BrowserViewModel,
                 },
                 actions = {
                     IconButton(onClick = { vm.setQuery("") }) { Icon(Icons.Filled.Search, "Search") }
+                    IconButton(onClick = vm::toggleView) {
+                        Icon(
+                            if (state.viewGrid) Icons.Filled.ViewList else Icons.Filled.GridView,
+                            if (state.viewGrid) "List view" else "Grid view",
+                        )
+                    }
                     Box {
                         IconButton(onClick = { sortOpen = true }) { Icon(Icons.Filled.SwapVert, "Sort") }
                         DropdownMenu(expanded = sortOpen, onDismissRequest = { sortOpen = false }) {
@@ -304,6 +412,11 @@ private fun BrowserTopBar(state: BrowserState, dir: File?, vm: BrowserViewModel,
                             if (dir != null) DropdownMenuItem(
                                 text = { Text(if (state.showHidden) "Hide hidden files" else "Show hidden files") },
                                 onClick = { moreOpen = false; vm.toggleHidden() },
+                            )
+                            if (state.trash) DropdownMenuItem(
+                                text = { Text("Empty Recycle bin") },
+                                leadingIcon = { Icon(Icons.Filled.DeleteForever, null) },
+                                onClick = { moreOpen = false; onEmptyBin() },
                             )
                             DropdownMenuItem(
                                 text = { Text("Refresh") },

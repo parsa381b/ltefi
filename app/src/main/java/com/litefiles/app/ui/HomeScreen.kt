@@ -15,6 +15,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.SdCard
 import androidx.compose.material.icons.filled.Smartphone
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -82,6 +83,8 @@ fun HomeScreen(state: BrowserState, vm: BrowserViewModel, snackbar: SnackbarHost
                 }
             }
 
+            item(key = "h-trash") { TrashCard(state.trashCount) { vm.openTrash() } }
+
             item(key = "h-storage") { SectionTitle("Storage") }
             items(state.volumes, key = { it.root.path }) { v ->
                 StorageCard(v) { vm.open(v.root) }
@@ -144,6 +147,28 @@ private fun StorageCard(v: Volume, onClick: () -> Unit) {
                 )
                 Spacer(Modifier.size(6.dp))
                 Text(label, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+    }
+}
+
+@Composable
+private fun TrashCard(count: Int, onClick: () -> Unit) {
+    Surface(
+        Modifier.fillMaxWidth().clickable(onClick = onClick),
+        shape = RoundedCornerShape(20.dp),
+        color = MaterialTheme.colorScheme.surfaceContainer,
+    ) {
+        Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+            Icon(Icons.Filled.Delete, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(32.dp))
+            Spacer(Modifier.width(16.dp))
+            Column {
+                Text("Recycle bin", style = MaterialTheme.typography.titleMedium)
+                Text(
+                    if (count == 0) "Empty" else "$count item(s) · kept for 30 days",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
         }
     }

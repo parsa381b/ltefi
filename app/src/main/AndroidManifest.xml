@@ -5,6 +5,9 @@
          Not accepted on Google Play without a policy exception; fine for sideloading. -->
     <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
 
+    <!-- Lets the app hand an APK to the system installer (user must still enable "Install unknown apps"). -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+
     <application
         android:allowBackup="false"
         android:enableOnBackInvokedCallback="true"
