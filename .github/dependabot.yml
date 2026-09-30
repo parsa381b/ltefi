@@ -1,10 +1,27 @@
 version: 2
 updates:
-  - package-ecosystem: "gradle"
-    directory: "/"
-    schedule:
-      interval: "weekly"
+  # All GitHub Actions updates arrive as ONE monthly pull request.
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
+    groups:
+      actions:
+        patterns: ["*"]
+
+  # Gradle dependencies: monthly, at most 3 open PRs, and skip upgrades that need a project migration.
+  - package-ecosystem: "gradle"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    open-pull-requests-limit: 3
+    ignore:
+      # AGP 9 changes how Kotlin is wired in: needs a manual migration first
+      - dependency-name: "com.android.application"
+        update-types: ["version-update:semver-major"]
+      # Gradle 9 requires the newer AGP above
+      - dependency-name: "gradle-wrapper"
+        update-types: ["version-update:semver-major"]
+      # 1.18+ failed CI with the current compileSdk/AGP; revisit together with the AGP migration
+      - dependency-name: "androidx.core:core-ktx"
+        update-types: ["version-update:semver-minor", "version-update:semver-major"]
