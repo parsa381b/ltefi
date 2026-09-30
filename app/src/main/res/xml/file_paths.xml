@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <!-- Lets FileProvider expose any file the user picks (internal storage and SD cards). -->
+    <root-path name="root" path="." />
+</paths>
