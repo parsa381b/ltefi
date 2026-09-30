@@ -14,8 +14,8 @@ android {
         applicationId = "com.litefiles.app"
         minSdk = 30 // Android 11+: All-files-access model, StorageVolume.directory, no legacy storage code
         targetSdk = 36
-        versionCode = 3
-        versionName = "1.2.0"
+        versionCode = 4
+        versionName = "1.2.1"
     }
 
     // Optional real signing: set KEYSTORE_FILE / KEYSTORE_PASSWORD / KEY_ALIAS / KEY_PASSWORD env vars.

@@ -10,7 +10,7 @@ fast folder loading, low memory, no lag on large directories, small APK. Single 
 **Features:** home screen (categories: Images/Videos/Audio/Documents/APKs, shortcuts, storage volumes with usage bars), folder browsing, sort (name/date/size, asc/desc, folders first),
 in-folder search, hidden-file toggle, multi-select (long-press), rename, delete, copy, move (clipboard + "paste here" bar, live progress + cancel), details dialog (size, path, modified, folder item counts), share (files only), open with external app, new folder, scroll-position restore when going up, dark mode.
 
-**Status:** initial version written without being compiled or run on a device (no SDK in the authoring environment). First thing to do with a real build: fix any compile errors, then test on a device with a very large folder.
+**Status:** builds successfully on GitHub Actions and has been installed and run on the owner's phone (repo: github.com/parsa381b/ltefi). Code is written without a local SDK, so every change is verified only by the CI build and on-device testing. Still to do: test with a very large folder and on an SD card.
 
 ## Stack and versions (see `gradle/libs.versions.toml`)
 - AGP 8.13.0, Kotlin 2.2.20 (Compose compiler plugin `org.jetbrains.kotlin.plugin.compose`), Gradle 8.14.3, JDK 17
@@ -83,6 +83,8 @@ Compose UI  --events-->  BrowserViewModel  --suspend calls-->  FileRepository (D
 16. **Cancel granularity = one 2 MB chunk** (`CHUNK_BYTES`). The partially copied item is deleted; its source is never touched until its copy fully succeeded (for moves the source is deleted only after that).
 17. **Details scan never follows symlinks** (loop-safe, one stat per entry) and runs iteratively, so deep trees can't overflow the stack.
 
+18. **Dependency update policy:** Dependabot runs monthly; Actions updates are grouped into one PR; Gradle updates are capped at 3 PRs. Ignored until a deliberate migration: AGP 9.x (Kotlin plugin setup changes), Gradle 9.x (needs AGP 9), `core-ktx` 1.18+ (failed CI with current compileSdk/AGP). Never merge a Dependabot PR whose check is red; log every merged bump in `CHANGELOG.md`. The runner is pinned to `ubuntu-24.04` for reproducible builds.
+
 ## Known limitations / ideas for next steps
 - Categories depend on MediaStore: freshly created/renamed files may appear after a short indexing delay, and folders with a `.nomedia` file are excluded. No per-category counts are shown on the tiles.
 - Documents is a fixed MIME list (PDF, Office, OpenDocument, RTF, EPUB, `text/*`); other types (e.g. `.md`, `.json` with unknown MIME) may be missing.
@@ -105,4 +107,4 @@ Compose UI  --events-->  BrowserViewModel  --suspend calls-->  FileRepository (D
 - Each version lists what changed, grouped as Added / Changed / Fixed / Removed / Docs / Build/CI, one clear line per change.
 - SemVer: patch = fixes/docs, minor = new features, major = breaking changes (e.g. min SDK raise).
 - If a change affects architecture or a design decision, also update the relevant section of this file.
-- Current version: **1.2.0**
+- Current version: **1.2.1**

@@ -9,6 +9,18 @@ Categories: **Added** (new features) · **Changed** (behavior/config changes) ·
 ## [Unreleased]
 _Nothing yet. Add new changes here as they are made, then move them under a new version heading when releasing._
 
+## [1.2.1] - 2026-09-30
+CI and dependency housekeeping after the first successful GitHub build. No app behavior changes.
+
+### Build/CI
+- Workflow actions updated to `actions/checkout@v7`, `actions/setup-java@v6`, `gradle/actions/setup-gradle@v5` and `actions/upload-artifact@v7`; this clears the "Node.js 20 is deprecated" and "setup-java v4 is deprecated" warnings. `softprops/action-gh-release` stays on v2 (it only runs on tag builds, so a bump could not be tested by a normal build).
+- Runner pinned to `ubuntu-24.04` instead of `ubuntu-latest`, which GitHub moves to Ubuntu 26 on 2026-10-19.
+- Dependabot: GitHub Actions updates are now grouped into one monthly PR; Gradle updates are monthly with at most 3 open PRs. Ignored for now: AGP major (9.x needs a migration), Gradle wrapper major (9.x needs AGP 9), and `core-ktx` minor/major bumps (1.19.1 failed CI). These two changes replace the 10 separate PRs from the first run, which were closed unmerged.
+- App version bumped to 1.2.1 (`versionCode` 4).
+
+### Docs
+- `README.md` and `PROJECT_CONTEXT.md`: status updated (built by CI and installed on a device), dependency-update policy documented.
+
 ## [1.2.0] - 2026-09-30
 Copy/move now show live progress with a Cancel button, and selections have a Details dialog.
 

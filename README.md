@@ -65,7 +65,7 @@ This permission is not accepted on Google Play without a policy exception, so di
 - **Package name / app id:** change `namespace` and `applicationId` in `app/build.gradle.kts` and move the `com/litefiles/app` source folders.
 - **App name:** `app/src/main/res/values/strings.xml`.
 - **Colors:** `ui/Theme.kt` (static palette; swap in `dynamicLightColorScheme` for Material You).
-- **Dependency versions:** `gradle/libs.versions.toml` (Dependabot is pre-configured to open update PRs weekly).
+- **Dependency versions:** `gradle/libs.versions.toml` (Dependabot is pre-configured: one grouped monthly PR for Actions, monthly Gradle PRs; see `.github/dependabot.yml` for what is deliberately ignored).
 
 ## Project docs
 
