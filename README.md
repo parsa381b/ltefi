@@ -5,7 +5,7 @@ No third-party runtime libraries: only AndroidX + Compose.
 
 **Features:** home screen with categories (Images, Videos, Audio, Documents, APKs), storage overview and shortcuts (Downloads, DCIM, Pictures, …) · folder browsing · sort by name/date/size ·
 search within a folder · show/hide hidden files · multi-select · rename · delete · copy · move (with live progress and cancel) · share · details (size, path, date, folder item count) · open with other apps ·
-new folder · grid or list view with thumbnails (photos, video frames, album art, APK icons) · Recycle bin with restore (auto-empties after 30 days) · dark mode.
+new folder · grid or list view with thumbnails (photos, video frames, album art, APK icons) · Recycle bin with restore (auto-empties after 30 days) · built-in viewers for images, video, audio, PDF and text/code (with syntax highlighting) · dark mode.
 
 ## Why it's fast and small
 
@@ -67,6 +67,22 @@ This permission is not accepted on Google Play without a policy exception, so di
 - **App name:** `app/src/main/res/values/strings.xml`.
 - **Colors:** `ui/Theme.kt` (static palette; swap in `dynamicLightColorScheme` for Material You).
 - **Dependency versions:** `gradle/libs.versions.toml` (Dependabot is pre-configured: one grouped monthly PR for Actions, monthly Gradle PRs; see `.github/dependabot.yml` for what is deliberately ignored).
+
+## Built-in viewers
+
+Tapping a file opens it inside the app:
+
+| Type | Viewer |
+|------|--------|
+| Images (JPEG, PNG, GIF, WebP, BMP, HEIC/AVIF where supported) | Swipe between images, pinch/double-tap zoom, animated GIF/WebP |
+| Video (MP4, 3GP, WebM, MKV, MOV, AVI, …) | Player with seek bar, ±10 s, next/previous |
+| Audio (MP3, WAV, FLAC, OGG, AAC, Opus, …) | Player with cover art and track list navigation |
+| PDF | Scrollable pages, fit-width or 2x zoom |
+| Text and code (txt, md, json, xml, html, css, js/ts, kt, java, py, c/cpp, go, rs, sh, sql, yaml, …) | Editor with syntax highlighting, line numbers, word wrap, save |
+
+The viewers use Android's built-in media stack, so no libraries were added and the APK stays small. The catch: video and audio formats are
+limited to what your phone's codecs support (AVI in particular often won't play). Every viewer has **More → Open with…** to hand the file
+to another app. Audio stops when you leave the player (no background playback). The text editor handles UTF-8 files up to 1 MB.
 
 ## Installing APKs and "Show in folder"
 

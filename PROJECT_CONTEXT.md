@@ -8,7 +8,7 @@ Android file manager (Samsung "My Files" look and feel), Kotlin + Jetpack Compos
 fast folder loading, low memory, no lag on large directories, small APK. Single module, single activity, no DI, no DB, no navigation library, no image library.
 
 **Features:** home screen (categories: Images/Videos/Audio/Documents/APKs, shortcuts, storage volumes with usage bars), folder browsing, sort (name/date/size, asc/desc, folders first),
-in-folder search, hidden-file toggle, multi-select (long-press), rename, delete, copy, move (clipboard + "paste here" bar, live progress + cancel), list/grid view with image/video thumbnails, Recycle bin (restore, empty, 30-day auto-purge), details dialog (size, path, modified, folder item counts), share (files only), install APKs (tap an APK), "Show in folder" for category files, open with external app, new folder, scroll-position restore when going up, dark mode.
+in-folder search, hidden-file toggle, multi-select (long-press), rename, delete, copy, move (clipboard + "paste here" bar, live progress + cancel), list/grid view with image/video thumbnails, Recycle bin (restore, empty, 30-day auto-purge), details dialog (size, path, modified, folder item counts), share (files only), install APKs (tap an APK), "Show in folder" for category files, built-in viewers (image with zoom/swipe, video, audio, PDF, text editor with syntax highlighting), open with external app, new folder, scroll-position restore when going up, dark mode.
 
 **Status:** builds successfully on GitHub Actions and has been installed and run on the owner's phone (repo: github.com/parsa381b/ltefi). Code is written without a local SDK, so every change is verified only by the CI build and on-device testing. Still to do: test with a very large folder and on an SD card.
 
@@ -26,7 +26,7 @@ gradle/libs.versions.toml        version catalog (single source of dependency ve
 gradle/wrapper/gradle-wrapper.properties   (wrapper jar/scripts NOT committed; run `gradle wrapper` locally if wanted)
 app/build.gradle.kts             R8 + resource shrink, optional env-var signing, packaging excludes
 CHANGELOG.md                     per-version record of every change (see "Changelog policy")
-app/src/main/AndroidManifest.xml MANAGE_EXTERNAL_STORAGE, REQUEST_INSTALL_PACKAGES, FileProvider
+app/src/main/AndroidManifest.xml MANAGE_EXTERNAL_STORAGE, REQUEST_INSTALL_PACKAGES, ViewerActivity, FileProvider
 app/src/main/res/xml/file_paths.xml   FileProvider root-path (all storage)
 app/src/main/java/com/litefiles/app/
   MainActivity.kt                edge-to-edge, hosts App(vm), calls vm.onResume()
@@ -42,9 +42,18 @@ app/src/main/java/com/litefiles/app/
   ui/Components.kt               FileRow, NameDialog, ConfirmDialog
   ui/Dialogs.kt                  OperationDialog (progress + cancel), DetailsDialog
   ui/Thumbnails.kt               Thumbnails loader (LRU, semaphore) + FileThumb composable
+  viewer/ViewerActivity.kt       hosts every viewer (not exported; handles config changes itself)
+  viewer/ViewerRouter.kt         ViewerType, extension -> viewer routing, ViewerSession, playlists
+  viewer/ViewerCommon.kt         top bar, More menu, error pane, time format, helpers
+  viewer/ImageViewer.kt          pager + zoom/pan + animated GIF/WebP (ImageDecoder)
+  viewer/VideoPlayer.kt          VideoView + custom controls
+  viewer/AudioPlayer.kt          MediaPlayer + audio focus + cover art
+  viewer/PdfViewer.kt            PdfRenderer, lazily rendered pages, LRU
+  viewer/TextEditor.kt           BasicTextField editor, line numbers, save
+  viewer/SyntaxHighlighter.kt    Lang table + linear single-pass highlighter
   ui/FileIcons.kt                Kind -> icon/color, shortcut icons
   ui/Theme.kt                    static light/dark palettes
-  util/Intents.kt                open file (APKs go to the installer), share files, request All-files-access
+  util/Intents.kt                open file (APK -> installer, viewable types -> built-in viewers, rest -> other apps via `openExternal`), share files, request All-files-access
 ```
 
 ## Architecture
@@ -92,7 +101,15 @@ Compose UI  --events-->  BrowserViewModel  --suspend calls-->  FileRepository (D
 21. **APK install = system installer, not PackageInstaller sessions:** tapping an `.apk` fires `ACTION_VIEW` with a FileProvider URI and the APK MIME type. That is the smallest code path and shows the system's own confirmation UI. It needs `REQUEST_INSTALL_PACKAGES` plus the user's one-time "Install unknown apps" toggle; if `canRequestPackageInstalls()` is false we open that settings page and show a toast (no in-app dialog, the user taps the APK again afterwards). Like all-files access, this makes the app sideload-only.
 22. **Show in folder = open + reveal:** `showInFolder(path)` calls `open(parent)` and sets `state.reveal`; once the list has items, `FileList` scrolls to that index (list or grid) and `finishReveal()` selects the file (selection doubles as the highlight). `open()`, `openCategory()` and `openTrash()` reset `reveal`, so a stale request can never fire later. Navigation history is not kept: Back goes to the parent folder, not back to the category.
 
+23. **Viewers live in their own `ViewerActivity`** (not exported, `configChanges` for rotation/dark mode/font scale so a playing video or unsaved edit is never recreated). `FileList` calls `openFile(ctx, path, siblings)`: `viewerSiblings()` filters the list the user was looking at to the same viewer type (images/video/audio only) and parks it in `ViewerSession.paths`; the viewer swipes/skips through it (fallback when empty: the file's folder sorted by name). Routing is by extension (`typeByExtension`, cheap enough for thousands of items); only `.ts` sniffs content (TypeScript text vs MPEG-TS video).
+24. **Platform media stack instead of Media3/FFmpeg** to keep the APK tiny: `ImageDecoder`, `VideoView`, `MediaPlayer`, `PdfRenderer` cost 0 bytes. Trade-off: video/audio support = what the device's codecs and containers handle (AVI is generally unsupported, some MOV/MKV codecs fail); failures show "Open with another app". Upgrade path if needed: Media3 ExoPlayer (roughly +1-2 MB, better MKV/subtitle/streaming support; AVI still needs an FFmpeg extension, which is much larger).
+25. **Image viewer:** `ImageDecoder.decodeDrawable` (EXIF-aware, animated GIF/WebP as `AnimatedImageDrawable` shown in an `AndroidView`), long edge capped at 2560 px. Custom zoom gesture (not `detectTransformGestures`) because that one consumes every drag and would block the pager: it only consumes with 2+ fingers or while zoomed.
+26. **PDF viewer:** one `PdfRenderer` guarded by a `Mutex` (it allows a single open page); page aspect ratios are read once on open so list heights are stable; pages render lazily into an LRU (heap/8, 16-64 MB) keyed `page@width` and are capped at 16 MP. "Zoom" = render pages 2x wide inside a horizontally scrolling box (no pinch zoom, no text selection or search).
+27. **Text editor:** `BasicTextField` + a `VisualTransformation` that returns an `AnnotatedString` from `Highlighter` (hand-written single-pass lexer, no regex; result cached so cursor moves don't rescan). Language profiles are data (`Lang`): keywords, comment/quote rules, markup flag. Limits keep typing smooth: files up to 1 MB, highlighting off above 200,000 chars, UTF-8 only, binary files (NUL bytes) refused. Word-wrap off shows a line-number gutter (same font/line height, so lines align); wrap on hides it.
+28. **Audio player:** `MediaPlayer` + `AudioFocusRequest` (pauses when another app takes audio), advances through the playlist, pauses on `ON_STOP`. No foreground service or media notification on purpose (lightweight): playback stops when you leave the screen.
+
 ## Known limitations / ideas for next steps
+- Viewers: no background audio or media notification; video/audio formats depend on the device (no AVI); PDF has no pinch zoom, search or text selection and no password entry; text editor has no find/replace, no undo button (keyboard undo only), only UTF-8, max 1 MB; image viewer can't show SVG (opens elsewhere) and HEIC/AVIF depend on the device; "Open with…" is in every viewer menu as the escape hatch.
 - Bin limits: files deleted by other apps don't go to the bin; it is per volume (not shared across SD cards); it holds storage until emptied or 30 days pass; a failed rename into the bin reports an error instead of deleting permanently; the bin is visible as a normal folder if "Show hidden files" is on.
 - Grid view has no option to change tile size; the top bar is crowded (4 icons) on very narrow screens.
 - Categories depend on MediaStore: freshly created/renamed files may appear after a short indexing delay, and folders with a `.nomedia` file are excluded. No per-category counts are shown on the tiles.
@@ -116,4 +133,4 @@ Compose UI  --events-->  BrowserViewModel  --suspend calls-->  FileRepository (D
 - Each version lists what changed, grouped as Added / Changed / Fixed / Removed / Docs / Build/CI, one clear line per change.
 - SemVer: patch = fixes/docs, minor = new features, major = breaking changes (e.g. min SDK raise).
 - If a change affects architecture or a design decision, also update the relevant section of this file.
-- Current version: **1.5.0**
+- Current version: **1.6.0**

@@ -83,6 +83,7 @@ import com.litefiles.app.data.FileRepository
 import com.litefiles.app.data.SortBy
 import com.litefiles.app.util.openFile
 import com.litefiles.app.util.shareFiles
+import com.litefiles.app.viewer.viewerSiblings
 import java.io.File
 import java.text.DateFormat
 
@@ -270,7 +271,7 @@ private fun FileList(state: BrowserState, dir: File?, vm: BrowserViewModel, modi
                             if (s.viewGrid) gridState.firstVisibleItemIndex else listState.firstVisibleItemIndex
                         vm.open(File(item.path))
                     }
-                    else -> openFile(ctx, item.path)
+                    else -> openFile(ctx, item.path, viewerSiblings(s.items, item))
                 }
             }
         }

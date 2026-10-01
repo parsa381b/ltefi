@@ -25,6 +25,13 @@
             </intent-filter>
         </activity>
 
+        <!-- Built-in viewers (image, video, audio, PDF, text). Handles config changes so playback and unsaved edits survive rotation. -->
+        <activity
+            android:name=".viewer.ViewerActivity"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden|uiMode|density|fontScale"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"

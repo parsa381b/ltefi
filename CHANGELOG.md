@@ -9,6 +9,28 @@ Categories: **Added** (new features) · **Changed** (behavior/config changes) ·
 ## [Unreleased]
 _Nothing yet. Add new changes here as they are made, then move them under a new version heading when releasing._
 
+## [1.6.0] - 2026-10-01
+Built-in viewers: tapping a file now opens it inside the app instead of sending you to another app.
+
+### Added
+- **Image viewer:** JPEG, PNG, GIF, WebP (animated GIF/WebP play), BMP and, on devices that support them, HEIC/HEIF/AVIF. Swipe left/right through the other images in the same list (the Images category order, or the folder sorted by name), pinch to zoom, drag to pan, double-tap to zoom, tap to hide the bar. Huge photos are decoded at up to 2560 px.
+- **Video player:** MP4, 3GP, WebM, MKV, MOV, AVI and other formats **as far as the device's own codecs allow** (the Android media stack is used, so AVI and some MOV/MKV files may not play). Play/pause, seek bar, back/forward 10 s, previous/next video, auto-continue, auto-hiding controls with full-screen. If a file can't play, the screen offers "Open with another app".
+- **Audio player:** MP3, WAV, FLAC, OGG, AAC/M4A, Opus, AMR, MIDI. Cover art (embedded or folder art), seek bar, previous/next/±10 s, continues with the next track, respects other apps' audio (pauses when another app takes over). It pauses when you leave the screen: there is no background playback.
+- **PDF viewer:** pages are drawn on demand, fit to the screen width, with a "Page x / n" indicator and a zoom toggle (fit width / 2x with sideways scrolling). Password-protected PDFs are reported (and can be opened in another app).
+- **Text editor with syntax highlighting:** opens text and code files (txt, md, json, xml/html, css, js/ts, kt, java, py, c/cpp/cs, go, rs, sh, sql, yaml/toml/ini, logs and more). Highlighting for Kotlin, Java/Gradle, JavaScript/TypeScript, Python, C/C++, C#, Go, Rust, Swift/Dart/PHP, Ruby, shell/batch, SQL, JSON, XML/HTML, CSS, YAML/TOML, INI, Markdown. Line numbers, optional word wrap, Save button, and a "Save / Discard / Cancel" prompt when leaving with unsaved changes. Files must be UTF-8 text up to 1 MB; highlighting switches off above 200,000 characters.
+- Every viewer has a menu with **Open with…** and **Share**.
+- New permission-free `viewer` package: `ViewerActivity`, `ViewerRouter` (type detection, playlists), `ViewerCommon`, `ImageViewer`, `VideoPlayer`, `AudioPlayer`, `PdfViewer`, `TextEditor`, `SyntaxHighlighter`. No libraries were added; the APK grows only by the new code.
+
+### Changed
+- `openFile()` now routes: APK to the installer, images/video/audio/PDF/text to the built-in viewers, everything else to another app. The old "open with another app" path is `openExternal()`.
+- `.ts` files are opened as text when the content looks like text (TypeScript) and as video otherwise (MPEG-TS).
+- SVG, Office documents, archives and other types still open in another app.
+- Manifest: new non-exported `ViewerActivity` that handles configuration changes itself, so video position and unsaved edits survive rotation.
+- App version bumped to 1.6.0 (`versionCode` 8).
+
+### Docs
+- `README.md` and `PROJECT_CONTEXT.md` updated (features, file map, design decisions, limitations).
+
 ## [1.5.0] - 2026-10-01
 Thumbnails for audio (cover art) and APKs (app icons).
 

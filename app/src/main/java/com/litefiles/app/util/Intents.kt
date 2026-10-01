@@ -8,6 +8,9 @@ import android.webkit.MimeTypeMap
 import android.widget.Toast
 import androidx.core.content.FileProvider
 import androidx.core.net.toUri
+import com.litefiles.app.viewer.ViewerActivity
+import com.litefiles.app.viewer.ViewerSession
+import com.litefiles.app.viewer.viewerTypeOf
 import java.io.File
 
 private fun uriFor(ctx: Context, file: File) =
@@ -16,12 +19,27 @@ private fun uriFor(ctx: Context, file: File) =
 private fun mimeOf(file: File): String =
     MimeTypeMap.getSingleton().getMimeTypeFromExtension(file.extension.lowercase()) ?: "*/*"
 
-fun openFile(ctx: Context, path: String) {
+/**
+ * Opens a file: APKs go to the installer, images/video/audio/PDF/text to the built-in viewers
+ * (with [siblings] as the swipe/next list), everything else to another app.
+ */
+fun openFile(ctx: Context, path: String, siblings: List<String> = emptyList()) {
     val file = File(path)
     if (file.extension.equals("apk", ignoreCase = true)) {
         installApk(ctx, file)
         return
     }
+    if (viewerTypeOf(file) != null) {
+        ViewerSession.paths = siblings
+        ctx.startActivity(Intent(ctx, ViewerActivity::class.java).putExtra(ViewerActivity.EXTRA_PATH, path))
+        return
+    }
+    openExternal(ctx, path)
+}
+
+/** Hands the file to another app through the system "open with" flow. */
+fun openExternal(ctx: Context, path: String) {
+    val file = File(path)
     val intent = Intent(Intent.ACTION_VIEW)
         .setDataAndType(uriFor(ctx, file), mimeOf(file))
         .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
