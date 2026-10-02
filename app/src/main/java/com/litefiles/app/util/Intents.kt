@@ -8,6 +8,7 @@ import android.webkit.MimeTypeMap
 import android.widget.Toast
 import androidx.core.content.FileProvider
 import androidx.core.net.toUri
+import com.litefiles.app.R
 import com.litefiles.app.viewer.ViewerActivity
 import com.litefiles.app.viewer.ViewerSession
 import com.litefiles.app.viewer.viewerTypeOf
@@ -46,7 +47,7 @@ fun openExternal(ctx: Context, path: String) {
     try {
         ctx.startActivity(intent)
     } catch (e: ActivityNotFoundException) {
-        Toast.makeText(ctx, "No app can open this file", Toast.LENGTH_SHORT).show()
+        Toast.makeText(ctx, ctx.getString(R.string.toast_no_app), Toast.LENGTH_SHORT).show()
     }
 }
 
@@ -60,7 +61,7 @@ private fun installApk(ctx: Context, file: File) {
     if (!ctx.packageManager.canRequestPackageInstalls()) {
         Toast.makeText(
             ctx,
-            "Turn on 'Install unknown apps' for Lite Files, then tap the APK again",
+            ctx.getString(R.string.toast_install_unknown),
             Toast.LENGTH_LONG,
         ).show()
         try {
@@ -78,7 +79,7 @@ private fun installApk(ctx: Context, file: File) {
     try {
         ctx.startActivity(intent)
     } catch (e: ActivityNotFoundException) {
-        Toast.makeText(ctx, "Can't start the installer", Toast.LENGTH_SHORT).show()
+        Toast.makeText(ctx, ctx.getString(R.string.toast_installer_failed), Toast.LENGTH_SHORT).show()
     }
 }
 
@@ -86,7 +87,7 @@ private fun installApk(ctx: Context, file: File) {
 fun shareFiles(ctx: Context, paths: List<String>) {
     val files = paths.map(::File).filter { it.isFile }
     if (files.isEmpty()) {
-        Toast.makeText(ctx, "Folders can't be shared", Toast.LENGTH_SHORT).show()
+        Toast.makeText(ctx, ctx.getString(R.string.toast_folders_no_share), Toast.LENGTH_SHORT).show()
         return
     }
     val uris = ArrayList(files.map { uriFor(ctx, it) })

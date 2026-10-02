@@ -6,6 +6,8 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
+import com.litefiles.app.AppSettings
+import com.litefiles.app.ThemeMode
 
 private val Light = lightColorScheme(
     primary = Color(0xFF3E91FF),
@@ -29,8 +31,20 @@ private val Dark = darkColorScheme(
     onSurfaceVariant = Color(0xFFA0A0A0),
 )
 
+/**
+ * True when the app should draw dark: the Theme setting picked in Settings, or the device setting
+ * when it is on "Follow system". [AppSettings.themeMode] is snapshot state, so switching theme
+ * in Settings recomposes everything that reads this.
+ */
+@Composable
+fun isAppDarkTheme(): Boolean = when (AppSettings.themeMode) {
+    ThemeMode.SYSTEM -> isSystemInDarkTheme()
+    ThemeMode.LIGHT -> false
+    ThemeMode.DARK -> true
+}
+
 /** Static Samsung-like palette. For Material You colors use dynamicLightColorScheme(context) on API 31+. */
 @Composable
 fun LiteFilesTheme(content: @Composable () -> Unit) {
-    MaterialTheme(colorScheme = if (isSystemInDarkTheme()) Dark else Light, content = content)
+    MaterialTheme(colorScheme = if (isAppDarkTheme()) Dark else Light, content = content)
 }

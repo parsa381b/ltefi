@@ -38,6 +38,7 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.SelectAll
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.SwapVert
 import androidx.compose.material3.Button
@@ -76,8 +77,11 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.litefiles.app.R
 import com.litefiles.app.data.FileItem
 import com.litefiles.app.data.FileRepository
 import com.litefiles.app.data.SortBy
@@ -118,8 +122,10 @@ fun BrowserScreen(state: BrowserState, dir: File?, vm: BrowserViewModel, snackba
                         Modifier.fillMaxWidth().navigationBarsPadding().padding(vertical = 6.dp),
                         horizontalArrangement = Arrangement.SpaceEvenly,
                     ) {
-                        BarAction(Icons.Filled.Restore, "Restore") { vm.restore() }
-                        BarAction(Icons.Filled.DeleteForever, "Delete") { prompt = Prompt.Delete }
+                        BarAction(Icons.Filled.Restore, stringResource(R.string.action_restore)) { vm.restore() }
+                        BarAction(Icons.Filled.DeleteForever, stringResource(R.string.action_delete)) {
+                            prompt = Prompt.Delete
+                        }
                     }
                 }
                 state.selected.isNotEmpty() -> Surface(tonalElevation = 3.dp) {
@@ -127,16 +133,24 @@ fun BrowserScreen(state: BrowserState, dir: File?, vm: BrowserViewModel, snackba
                         Modifier.fillMaxWidth().navigationBarsPadding().padding(vertical = 6.dp),
                         horizontalArrangement = Arrangement.SpaceEvenly,
                     ) {
-                        BarAction(Icons.Filled.ContentCut, "Move") { vm.copyOrCut(move = true) }
-                        BarAction(Icons.Filled.ContentCopy, "Copy") { vm.copyOrCut(move = false) }
-                        BarAction(Icons.Filled.Share, "Share") { shareFiles(ctx, state.selected.toList()) }
-                        BarAction(Icons.Filled.Delete, "Delete") { prompt = Prompt.Delete }
+                        BarAction(Icons.Filled.ContentCut, stringResource(R.string.action_move)) {
+                            vm.copyOrCut(move = true)
+                        }
+                        BarAction(Icons.Filled.ContentCopy, stringResource(R.string.action_copy)) {
+                            vm.copyOrCut(move = false)
+                        }
+                        BarAction(Icons.Filled.Share, stringResource(R.string.action_share)) {
+                            shareFiles(ctx, state.selected.toList())
+                        }
+                        BarAction(Icons.Filled.Delete, stringResource(R.string.action_delete)) {
+                            prompt = Prompt.Delete
+                        }
                         Box {
                             var menuOpen by remember { mutableStateOf(false) }
-                            BarAction(Icons.Filled.MoreVert, "More") { menuOpen = true }
+                            BarAction(Icons.Filled.MoreVert, stringResource(R.string.action_more)) { menuOpen = true }
                             DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
                                 DropdownMenuItem(
-                                    text = { Text("Rename") },
+                                    text = { Text(stringResource(R.string.action_rename)) },
                                     leadingIcon = { Icon(Icons.Filled.Edit, null) },
                                     enabled = state.selected.size == 1,
                                     onClick = {
@@ -146,13 +160,13 @@ fun BrowserScreen(state: BrowserState, dir: File?, vm: BrowserViewModel, snackba
                                     },
                                 )
                                 if (state.category != null) DropdownMenuItem(
-                                    text = { Text("Show in folder") },
+                                    text = { Text(stringResource(R.string.show_in_folder)) },
                                     leadingIcon = { Icon(Icons.Filled.FolderOpen, null) },
                                     enabled = state.selected.size == 1,
                                     onClick = { menuOpen = false; vm.showInFolder(state.selected.first()) },
                                 )
                                 DropdownMenuItem(
-                                    text = { Text("Details") },
+                                    text = { Text(stringResource(R.string.action_details)) },
                                     leadingIcon = { Icon(Icons.Filled.Info, null) },
                                     onClick = { menuOpen = false; vm.showDetails() },
                                 )
@@ -166,16 +180,22 @@ fun BrowserScreen(state: BrowserState, dir: File?, vm: BrowserViewModel, snackba
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
-                        val verb = if (cb.move) "move" else "copy"
+                        val verb = if (cb.move) stringResource(R.string.verb_move) else stringResource(R.string.verb_copy)
+                        val n = cb.paths.size
                         Text(
-                            if (dir == null) "Open a folder to $verb ${cb.paths.size} item(s)"
-                            else "${cb.paths.size} item(s) to $verb",
+                            if (dir == null) pluralStringResource(R.plurals.paste_need_folder, n, n, verb)
+                            else pluralStringResource(R.plurals.paste_count, n, n, verb),
                             Modifier.weight(1f),
                             style = MaterialTheme.typography.bodyMedium,
                         )
-                        TextButton(onClick = vm::cancelPaste) { Text("Cancel") }
+                        TextButton(onClick = vm::cancelPaste) { Text(stringResource(R.string.action_cancel)) }
                         if (dir != null) {
-                            Button(onClick = vm::paste) { Text(if (cb.move) "Move here" else "Copy here") }
+                            Button(onClick = vm::paste) {
+                                Text(
+                                    if (cb.move) stringResource(R.string.move_here)
+                                    else stringResource(R.string.copy_here),
+                                )
+                            }
                         }
                     }
                 }
@@ -187,19 +207,35 @@ fun BrowserScreen(state: BrowserState, dir: File?, vm: BrowserViewModel, snackba
     }
 
     when (val p = prompt) {
-        Prompt.NewFolder -> NameDialog("New folder", "", "Create", { prompt = null }) {
+        Prompt.NewFolder -> NameDialog(
+            title = stringResource(R.string.dialog_new_folder),
+            initial = "",
+            confirmLabel = stringResource(R.string.action_create),
+            onDismiss = { prompt = null },
+        ) {
             vm.newFolder(it); prompt = null
         }
-        is Prompt.Rename -> NameDialog("Rename", p.name, "Rename", { prompt = null }) {
+        is Prompt.Rename -> NameDialog(
+            title = stringResource(R.string.dialog_rename),
+            initial = p.name,
+            confirmLabel = stringResource(R.string.action_rename),
+            onDismiss = { prompt = null },
+        ) {
             vm.rename(p.path, it); prompt = null
         }
         Prompt.Delete -> {
             val n = state.selected.size
             val permanent = state.trash || state.selected.any { FileRepository.isInTrash(it) }
             ConfirmDialog(
-                title = if (permanent) "Delete $n item(s) permanently?" else "Move $n item(s) to Recycle bin?",
-                message = if (permanent) "This can't be undone." else "You can restore them from the Recycle bin for 30 days.",
-                confirmLabel = if (permanent) "Delete" else "Move",
+                title = if (permanent) {
+                    pluralStringResource(R.plurals.confirm_delete_permanent_title, n, n)
+                } else {
+                    pluralStringResource(R.plurals.confirm_trash_title, n, n)
+                },
+                message = stringResource(
+                    if (permanent) R.string.confirm_delete_permanent_msg else R.string.confirm_trash_msg,
+                ),
+                confirmLabel = stringResource(if (permanent) R.string.action_delete else R.string.action_move),
                 onDismiss = { prompt = null },
             ) {
                 if (state.trash) vm.deleteForever() else vm.delete()
@@ -207,9 +243,9 @@ fun BrowserScreen(state: BrowserState, dir: File?, vm: BrowserViewModel, snackba
             }
         }
         Prompt.EmptyBin -> ConfirmDialog(
-            title = "Empty Recycle bin?",
-            message = "Everything in the Recycle bin will be deleted permanently.",
-            confirmLabel = "Empty",
+            title = stringResource(R.string.confirm_empty_trash_title),
+            message = stringResource(R.string.confirm_empty_trash_msg),
+            confirmLabel = stringResource(R.string.action_empty),
             onDismiss = { prompt = null },
         ) { vm.emptyBin(); prompt = null }
         null -> Unit
@@ -315,10 +351,10 @@ private fun FileList(state: BrowserState, dir: File?, vm: BrowserViewModel, modi
             if (!state.loading && state.items.isEmpty()) {
                 Text(
                     state.error ?: when {
-                        !state.query.isNullOrBlank() -> "No results"
-                        state.trash -> "Recycle bin is empty"
-                        state.category != null -> "No files found"
-                        else -> "Empty folder"
+                        !state.query.isNullOrBlank() -> stringResource(R.string.empty_results)
+                        state.trash -> stringResource(R.string.empty_trash)
+                        state.category != null -> stringResource(R.string.empty_no_files)
+                        else -> stringResource(R.string.empty_folder)
                     },
                     Modifier.align(Alignment.Center),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -340,29 +376,32 @@ private fun BrowserTopBar(
     val n = state.selected.size
     var sortOpen by remember { mutableStateOf(false) }
     var moreOpen by remember { mutableStateOf(false) }
+    var settingsOpen by remember { mutableStateOf(false) }
 
     when {
         state.query != null -> SearchTopBar(vm)
 
         n > 0 -> TopAppBar(
-            title = { Text("$n selected") },
+            title = { Text(pluralStringResource(R.plurals.n_selected, n, n)) },
             navigationIcon = {
-                IconButton(onClick = vm::clearSelection) { Icon(Icons.Filled.Close, "Cancel selection") }
+                IconButton(onClick = vm::clearSelection) {
+                    Icon(Icons.Filled.Close, stringResource(R.string.action_cancel_selection))
+                }
             },
             actions = {
-                IconButton(onClick = vm::selectAll) { Icon(Icons.Filled.SelectAll, "Select all") }
+                IconButton(onClick = vm::selectAll) {
+                    Icon(Icons.Filled.SelectAll, stringResource(R.string.action_select_all))
+                }
             },
         )
 
         else -> {
-            val title = remember(dir, state.volumes, state.category, state.trash) {
-                if (state.trash) {
-                    "Recycle bin"
-                } else {
-                    state.category?.label
-                        ?: dir?.let { d -> state.volumes.firstOrNull { it.root.path == d.path }?.name ?: d.name }
-                        ?: ""
-                }
+            val category = state.category
+            val title = when {
+                state.trash -> stringResource(R.string.recycle_bin)
+                category != null -> stringResource(category.labelRes)
+                dir != null -> state.volumes.firstOrNull { it.root.path == dir.path }?.name ?: dir.name
+                else -> ""
             }
             TopAppBar(
                 title = {
@@ -378,24 +417,30 @@ private fun BrowserTopBar(
                     }
                 },
                 navigationIcon = {
-                    IconButton(onClick = { vm.goUp() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") }
+                    IconButton(onClick = { vm.goUp() }) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.action_back))
+                    }
                 },
                 actions = {
-                    IconButton(onClick = { vm.setQuery("") }) { Icon(Icons.Filled.Search, "Search") }
+                    IconButton(onClick = { vm.setQuery("") }) {
+                        Icon(Icons.Filled.Search, stringResource(R.string.action_search))
+                    }
                     IconButton(onClick = vm::toggleView) {
                         Icon(
                             if (state.viewGrid) Icons.Filled.ViewList else Icons.Filled.GridView,
-                            if (state.viewGrid) "List view" else "Grid view",
+                            stringResource(if (state.viewGrid) R.string.list_view else R.string.grid_view),
                         )
                     }
                     Box {
-                        IconButton(onClick = { sortOpen = true }) { Icon(Icons.Filled.SwapVert, "Sort") }
+                        IconButton(onClick = { sortOpen = true }) {
+                            Icon(Icons.Filled.SwapVert, stringResource(R.string.action_sort))
+                        }
                         DropdownMenu(expanded = sortOpen, onDismissRequest = { sortOpen = false }) {
                             SortBy.entries.forEach { by ->
                                 val active = state.sortBy == by
                                 val arrow = if (active) (if (state.ascending) "  ↑" else "  ↓") else ""
                                 DropdownMenuItem(
-                                    text = { Text(by.name.lowercase().replaceFirstChar { it.uppercase() } + arrow) },
+                                    text = { Text(stringResource(by.labelRes) + arrow) },
                                     leadingIcon = { if (active) Icon(Icons.Filled.Check, null) },
                                     onClick = { vm.setSort(by); sortOpen = false },
                                 )
@@ -403,26 +448,39 @@ private fun BrowserTopBar(
                         }
                     }
                     Box {
-                        IconButton(onClick = { moreOpen = true }) { Icon(Icons.Filled.MoreVert, "More") }
+                        IconButton(onClick = { moreOpen = true }) {
+                            Icon(Icons.Filled.MoreVert, stringResource(R.string.action_more))
+                        }
                         DropdownMenu(expanded = moreOpen, onDismissRequest = { moreOpen = false }) {
                             if (dir != null) DropdownMenuItem(
-                                text = { Text("New folder") },
+                                text = { Text(stringResource(R.string.new_folder)) },
                                 leadingIcon = { Icon(Icons.Filled.CreateNewFolder, null) },
                                 onClick = { moreOpen = false; onNewFolder() },
                             )
                             if (dir != null) DropdownMenuItem(
-                                text = { Text(if (state.showHidden) "Hide hidden files" else "Show hidden files") },
+                                text = {
+                                    Text(
+                                        stringResource(
+                                            if (state.showHidden) R.string.hide_hidden else R.string.show_hidden,
+                                        )
+                                    )
+                                },
                                 onClick = { moreOpen = false; vm.toggleHidden() },
                             )
                             if (state.trash) DropdownMenuItem(
-                                text = { Text("Empty Recycle bin") },
+                                text = { Text(stringResource(R.string.empty_recycle_bin)) },
                                 leadingIcon = { Icon(Icons.Filled.DeleteForever, null) },
                                 onClick = { moreOpen = false; onEmptyBin() },
                             )
                             DropdownMenuItem(
-                                text = { Text("Refresh") },
+                                text = { Text(stringResource(R.string.action_refresh)) },
                                 leadingIcon = { Icon(Icons.Filled.Refresh, null) },
                                 onClick = { moreOpen = false; vm.refresh() },
+                            )
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.action_settings)) },
+                                leadingIcon = { Icon(Icons.Filled.Settings, null) },
+                                onClick = { moreOpen = false; settingsOpen = true },
                             )
                         }
                     }
@@ -430,6 +488,8 @@ private fun BrowserTopBar(
             )
         }
     }
+
+    if (settingsOpen) SettingsDialog(onDismiss = { settingsOpen = false })
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -443,7 +503,7 @@ private fun SearchTopBar(vm: BrowserViewModel) {
             TextField(
                 value = text,
                 onValueChange = { text = it; vm.setQuery(it) },
-                placeholder = { Text("Search in this folder") },
+                placeholder = { Text(stringResource(R.string.search_in_folder)) },
                 singleLine = true,
                 colors = TextFieldDefaults.colors(
                     focusedContainerColor = Color.Transparent,
@@ -455,7 +515,9 @@ private fun SearchTopBar(vm: BrowserViewModel) {
             )
         },
         navigationIcon = {
-            IconButton(onClick = { vm.setQuery(null) }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Close search") }
+            IconButton(onClick = { vm.setQuery(null) }) {
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.close_search))
+            }
         },
     )
 }

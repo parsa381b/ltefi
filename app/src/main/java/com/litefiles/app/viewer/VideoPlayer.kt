@@ -41,6 +41,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.view.WindowCompat
@@ -48,6 +49,7 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
+import com.litefiles.app.R
 import kotlinx.coroutines.delay
 import java.io.File
 
@@ -156,7 +158,7 @@ private fun VideoScreen(playlist: List<String>, startIndex: Int, onBack: () -> U
         Box(Modifier.fillMaxSize().pointerInput(Unit) { detectTapGestures { controls = !controls } })
 
         if (failed) {
-            ErrorPane("This device can't play this video (format or codec not supported)", path, color = Color.White)
+            ErrorPane(stringResource(R.string.error_video), path, color = Color.White)
         } else if (!prepared) {
             CircularProgressIndicator(Modifier.align(Alignment.Center), color = Color.White)
         }
@@ -204,11 +206,11 @@ private fun VideoScreen(playlist: List<String>, startIndex: Int, onBack: () -> U
                     Spacer(Modifier.weight(1f))
                     if (playlist.size > 1) {
                         IconButton(onClick = { if (index > 0) index-- }) {
-                            Icon(Icons.Filled.SkipPrevious, "Previous", tint = Color.White)
+                            Icon(Icons.Filled.SkipPrevious, stringResource(R.string.previous), tint = Color.White)
                         }
                     }
                     IconButton(onClick = { seekBy(-10_000) }) {
-                        Icon(Icons.Filled.Replay10, "Back 10 seconds", tint = Color.White)
+                        Icon(Icons.Filled.Replay10, stringResource(R.string.back_10s), tint = Color.White)
                     }
                     IconButton(
                         onClick = {
@@ -224,17 +226,17 @@ private fun VideoScreen(playlist: List<String>, startIndex: Int, onBack: () -> U
                     ) {
                         Icon(
                             if (playing) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-                            if (playing) "Pause" else "Play",
+                            stringResource(if (playing) R.string.pause else R.string.play),
                             tint = Color.White,
                             modifier = Modifier.size(36.dp),
                         )
                     }
                     IconButton(onClick = { seekBy(10_000) }) {
-                        Icon(Icons.Filled.Forward10, "Forward 10 seconds", tint = Color.White)
+                        Icon(Icons.Filled.Forward10, stringResource(R.string.forward_10s), tint = Color.White)
                     }
                     if (playlist.size > 1) {
                         IconButton(onClick = { if (index < playlist.lastIndex) index++ }) {
-                            Icon(Icons.Filled.SkipNext, "Next", tint = Color.White)
+                            Icon(Icons.Filled.SkipNext, stringResource(R.string.next), tint = Color.White)
                         }
                     }
                 }

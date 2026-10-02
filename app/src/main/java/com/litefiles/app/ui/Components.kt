@@ -39,12 +39,14 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
+import com.litefiles.app.R
 import com.litefiles.app.data.FileItem
 import java.text.DateFormat
 import java.util.Date
@@ -69,7 +71,8 @@ fun FileRow(
     val ctx: Context = LocalContext.current
     val kind = remember(item) { item.kind }
     val subtitle = remember(item, showFolder, deleted) {
-        val date = (if (deleted) "Deleted " else "") + dateFormat.format(Date(item.modified))
+        val formatted = dateFormat.format(Date(item.modified))
+        val date = if (deleted) ctx.getString(R.string.deleted_at, formatted) else formatted
         val base = if (item.isDir) date else "$date · ${Formatter.formatShortFileSize(ctx, item.size)}"
         // in category lists, show which folder the file lives in
         if (showFolder) item.path.substringBeforeLast('/').substringAfterLast('/') + " · " + base else base
@@ -198,7 +201,7 @@ fun NameDialog(
         confirmButton = {
             TextButton(onClick = { onConfirm(text.text) }, enabled = text.text.isNotBlank()) { Text(confirmLabel) }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },
     )
 }
 
@@ -215,6 +218,6 @@ fun ConfirmDialog(
         title = { Text(title) },
         text = { Text(message) },
         confirmButton = { TextButton(onClick = onConfirm) { Text(confirmLabel) } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },
     )
 }

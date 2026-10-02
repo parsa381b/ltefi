@@ -1,5 +1,6 @@
 package com.litefiles.app.viewer
 
+import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Color as AndroidColor
 import android.graphics.pdf.PdfRenderer
@@ -40,8 +41,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.litefiles.app.R
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -92,7 +96,7 @@ private sealed interface PdfState {
     class Failed(val message: String) : PdfState
 }
 
-private fun openPdf(path: String): PdfState {
+private fun openPdf(ctx: Context, path: String): PdfState {
     return try {
         val pfd = ParcelFileDescriptor.open(File(path), ParcelFileDescriptor.MODE_READ_ONLY)
         try {
@@ -100,7 +104,7 @@ private fun openPdf(path: String): PdfState {
             if (renderer.pageCount == 0) {
                 renderer.close()
                 pfd.close()
-                return PdfState.Failed("This PDF has no pages")
+                return PdfState.Failed(ctx.getString(R.string.error_pdf_no_pages))
             }
             val ratios = FloatArray(renderer.pageCount) { i ->
                 renderer.openPage(i).use { p -> if (p.width > 0) p.height.toFloat() / p.width else 1.414f }
@@ -111,17 +115,18 @@ private fun openPdf(path: String): PdfState {
             throw e
         }
     } catch (e: SecurityException) {
-        PdfState.Failed("This PDF is password-protected")
+        PdfState.Failed(ctx.getString(R.string.error_pdf_password))
     } catch (e: Exception) {
-        PdfState.Failed("Can't open this PDF")
+        PdfState.Failed(ctx.getString(R.string.error_pdf_open))
     }
 }
 
 /** Platform PdfRenderer: pages are drawn on demand (only the visible ones), cached by size, fit to screen width. */
 @Composable
 fun PdfViewer(path: String, onBack: () -> Unit) {
+    val ctx = LocalContext.current
     val state by produceState<PdfState>(PdfState.Loading, path) {
-        value = withContext(Dispatchers.IO) { openPdf(path) }
+        value = withContext(Dispatchers.IO) { openPdf(ctx, path) }
     }
     when (val s = state) {
         PdfState.Loading -> Scaffold(topBar = { ViewerTopBar(File(path).name, onBack) }) { pad ->
@@ -152,11 +157,14 @@ private fun PdfScreen(path: String, doc: PdfDoc, onBack: () -> Unit) {
         topBar = {
             ViewerTopBar(
                 title = File(path).name,
-                subtitle = "Page $pageNo / ${doc.ratios.size}",
+                subtitle = stringResource(R.string.page_of, pageNo, doc.ratios.size),
                 onBack = onBack,
                 actions = {
                     IconButton(onClick = { zoomed = !zoomed }) {
-                        Icon(if (zoomed) Icons.Filled.ZoomOut else Icons.Filled.ZoomIn, if (zoomed) "Fit to width" else "Zoom in")
+                        Icon(
+                            if (zoomed) Icons.Filled.ZoomOut else Icons.Filled.ZoomIn,
+                            stringResource(if (zoomed) R.string.fit_width else R.string.zoom_in),
+                        )
                     }
                     ViewerMenu(path)
                 },

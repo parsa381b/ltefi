@@ -5,6 +5,7 @@ import android.os.Environment
 import android.os.StatFs
 import android.os.storage.StorageManager
 import android.provider.MediaStore
+import com.litefiles.app.R
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -20,11 +21,16 @@ import java.nio.file.Path
 import java.nio.file.attribute.BasicFileAttributes
 import kotlin.random.Random
 
-enum class SortBy { NAME, DATE, SIZE }
+enum class SortBy(val labelRes: Int) {
+    NAME(R.string.sort_name),
+    DATE(R.string.sort_date),
+    SIZE(R.string.sort_size),
+}
 
 class Volume(val name: String, val root: File, val total: Long, val free: Long, val primary: Boolean)
 
-class Shortcut(val folder: String, val label: String, val dir: File)
+/** [labelRes] is a resource so the shortcut name follows the app language, not the folder name on disk. */
+class Shortcut(val folder: String, val labelRes: Int, val dir: File)
 
 /** All disk access lives here. Every function runs on Dispatchers.IO. */
 object FileRepository {
@@ -182,15 +188,15 @@ object FileRepository {
     fun shortcuts(primaryRoot: File?): List<Shortcut> {
         if (primaryRoot == null) return emptyList()
         return listOf(
-            "Download" to "Downloads",
-            "DCIM" to "DCIM",
-            "Pictures" to "Pictures",
-            "Documents" to "Documents",
-            "Music" to "Music",
-            "Movies" to "Movies",
-        ).mapNotNull { (folder, label) ->
+            "Download" to R.string.sc_downloads,
+            "DCIM" to R.string.sc_dcim,
+            "Pictures" to R.string.sc_pictures,
+            "Documents" to R.string.sc_documents,
+            "Music" to R.string.sc_music,
+            "Movies" to R.string.sc_movies,
+        ).mapNotNull { (folder, labelRes) ->
             val dir = File(primaryRoot, folder)
-            if (dir.isDirectory) Shortcut(folder, label, dir) else null
+            if (dir.isDirectory) Shortcut(folder, labelRes, dir) else null
         }
     }
 
@@ -371,6 +377,7 @@ object FileRepository {
      * copy is deleted and its source is left untouched. Items finished before cancelling stay done.
      */
     suspend fun transfer(
+        ctx: Context,
         paths: List<String>,
         destDir: File,
         move: Boolean,
@@ -381,7 +388,7 @@ object FileRepository {
 
         val destCanon = destDir.canonicalFile
         stats.total = paths.size
-        onProgress(Progress(0L, 0L, 0, paths.size, "Preparing…"))
+        onProgress(Progress(0L, 0L, 0, paths.size, ctx.getString(R.string.op_preparing)))
 
         val pending = ArrayList<Pending>()
         for (p in paths) {
@@ -484,7 +491,7 @@ object FileRepository {
     // ---------- Details ----------
 
     /** Cheap, immediate part of the Details dialog (a few stat calls). */
-    suspend fun describe(paths: List<String>): Details = withContext(Dispatchers.IO) {
+    suspend fun describe(ctx: Context, paths: List<String>): Details = withContext(Dispatchers.IO) {
         val files = paths.map(::File)
         if (files.size == 1) {
             val f = files[0]
@@ -492,7 +499,14 @@ object FileRepository {
             Details(
                 title = f.name,
                 location = f.parent,
-                type = if (dir) "Folder" else f.extension.let { if (it.isEmpty()) "File" else "${it.uppercase()} file" },
+                type = if (dir) {
+                    ctx.getString(R.string.type_folder)
+                } else {
+                    f.extension.let {
+                        if (it.isEmpty()) ctx.getString(R.string.type_file)
+                        else ctx.getString(R.string.type_ext_file, it.uppercase())
+                    }
+                },
                 modified = f.lastModified(),
                 single = true,
                 isDir = dir,
@@ -508,7 +522,7 @@ object FileRepository {
                 if (f.isDirectory) nFolders++ else nFiles++
             }
             Details(
-                title = "${files.size} items",
+                title = ctx.resources.getQuantityString(R.plurals.n_items, files.size, files.size),
                 location = files.mapNotNullTo(HashSet()) { it.parent }.singleOrNull(),
                 type = null,
                 modified = null,

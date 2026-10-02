@@ -22,9 +22,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.litefiles.app.R
 import com.litefiles.app.util.requestAllFilesAccess
 
 @Composable
@@ -61,16 +63,19 @@ private fun PermissionScreen() {
     ) {
         Icon(Icons.Filled.FolderOpen, null, Modifier.size(72.dp), tint = MaterialTheme.colorScheme.primary)
         Spacer(Modifier.height(16.dp))
-        Text("Allow access to all files", style = MaterialTheme.typography.titleLarge, textAlign = TextAlign.Center)
+        Text(
+            stringResource(R.string.permission_title),
+            style = MaterialTheme.typography.titleLarge,
+            textAlign = TextAlign.Center,
+        )
         Spacer(Modifier.height(8.dp))
         Text(
-            "Lite Files needs \"All files access\" to browse and manage your storage. " +
-                "Files never leave your device.",
+            stringResource(R.string.permission_body),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
         )
         Spacer(Modifier.height(24.dp))
-        Button(onClick = { requestAllFilesAccess(ctx) }) { Text("Open settings") }
+        Button(onClick = { requestAllFilesAccess(ctx) }) { Text(stringResource(R.string.open_settings)) }
     }
 }

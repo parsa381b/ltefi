@@ -9,6 +9,25 @@ Categories: **Added** (new features) · **Changed** (behavior/config changes) ·
 ## [Unreleased]
 _Nothing yet. Add new changes here as they are made, then move them under a new version heading when releasing._
 
+## [1.7.0] - 2026-10-02
+Persian localization and a Settings screen with a theme (light/dark/system) picker.
+
+### Added
+- **Persian (فارسی) localization:** every user-facing string moved out of the Kotlin code into `res/values/strings.xml` and translated in `res/values-fa/strings.xml` (165 strings/plurals), including the permission screen, home, browser, dialogs, operation messages, Details, all viewers, toasts and icon content descriptions. The app follows the device language by default.
+- **In-app language switcher** (Settings → Language: System default / English / فارسی). The locale is applied in `attachBaseContext` of the application and of both activities (`AppSettings.wrap`, no AppCompat needed on minSdk 30) and `Locale.getDefault()` is kept in sync, so dates and numbers follow the chosen language (Persian digits; the calendar is the one ICU picks for that locale). Picking a language recreates the activity.
+- **Settings screen** (gear icon on the home top bar, and More → Settings in the browser) with two sections: Theme and Language.
+- **Theme setting** (Settings → Theme: Follow system / Light / Dark), persisted in the existing `lite_files` SharedPreferences and read as Compose snapshot state, so switching applies immediately; "Follow system" keeps the old behaviour.
+- New `AppSettings` (settings state + locale wrapper), `LiteFilesApp` (application class registered in the manifest) and `ui/SettingsDialog`.
+
+### Changed
+- All UI text is now resolved through string resources (`stringResource` / `pluralStringResource` in composables, `Context.getString` in the ViewModel, `FileRepository` and toasts); counts use `<plurals>` so quantities are grammatical in both languages.
+- `Category`, `SortBy` and `Shortcut` carry a `labelRes` instead of a hardcoded English label; `FileRepository.describe()` and `transfer()` take a `Context` to localize the type and "Preparing…" strings.
+- `LiteFilesTheme` now reads the Theme setting (`isAppDarkTheme()`), which the text editor's syntax highlighter uses too instead of `isSystemInDarkTheme()`.
+- App version bumped to 1.7.0 (`versionCode` 9).
+
+### Docs
+- `README.md` and `PROJECT_CONTEXT.md` updated (features, file map, design decisions 11/29/30, conventions, limitations).
+
 ## [1.6.0] - 2026-10-01
 Built-in viewers: tapping a file now opens it inside the app instead of sending you to another app.
 

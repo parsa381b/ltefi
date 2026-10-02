@@ -38,10 +38,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
+import com.litefiles.app.R
 import com.litefiles.app.util.openExternal
 import com.litefiles.app.util.shareFiles
 import kotlinx.coroutines.Dispatchers
@@ -127,7 +129,9 @@ fun ViewerTopBar(
             }
         },
         navigationIcon = {
-            IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") }
+            IconButton(onClick = onBack) {
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.action_back))
+            }
         },
         actions = actions,
     )
@@ -139,15 +143,17 @@ fun ViewerMenu(path: String, extra: @Composable ColumnScope.(close: () -> Unit) 
     val ctx = LocalContext.current
     var open by remember { mutableStateOf(false) }
     Box {
-        IconButton(onClick = { open = true }) { Icon(Icons.Filled.MoreVert, "More") }
+        IconButton(onClick = { open = true }) {
+            Icon(Icons.Filled.MoreVert, stringResource(R.string.action_more))
+        }
         DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
             extra { open = false }
             DropdownMenuItem(
-                text = { Text("Open with…") },
+                text = { Text(stringResource(R.string.action_open_with)) },
                 onClick = { open = false; openExternal(ctx, path) },
             )
             DropdownMenuItem(
-                text = { Text("Share") },
+                text = { Text(stringResource(R.string.action_share)) },
                 onClick = { open = false; shareFiles(ctx, listOf(path)) },
             )
         }
@@ -168,6 +174,6 @@ fun ErrorPane(message: String, path: String, modifier: Modifier = Modifier, colo
             color = if (color == Color.Unspecified) MaterialTheme.colorScheme.onBackground else color,
         )
         Spacer(Modifier.height(16.dp))
-        Button(onClick = { openExternal(ctx, path) }) { Text("Open with another app") }
+        Button(onClick = { openExternal(ctx, path) }) { Text(stringResource(R.string.action_open_with_other)) }
     }
 }

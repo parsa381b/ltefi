@@ -39,8 +39,10 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.positionChanged
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.viewinterop.AndroidView
+import com.litefiles.app.R
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -141,7 +143,7 @@ private fun ImagePage(path: String, onTap: () -> Unit) {
                     modifier = Modifier.fillMaxSize(),
                 )
             }
-            ImageResult.Failed -> ErrorPane("Can't show this image", path, color = Color.White)
+            ImageResult.Failed -> ErrorPane(stringResource(R.string.error_image), path, color = Color.White)
         }
     }
 }

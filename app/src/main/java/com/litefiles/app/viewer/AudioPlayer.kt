@@ -51,11 +51,13 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
+import com.litefiles.app.R
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
@@ -195,7 +197,7 @@ private fun AudioScreen(playlist: List<String>, startIndex: Int, onBack: () -> U
         },
     ) { pad ->
         if (failed) {
-            ErrorPane("Can't play this audio file", path, Modifier.padding(pad))
+            ErrorPane(stringResource(R.string.error_audio), path, Modifier.padding(pad))
         } else {
             Column(
                 Modifier.padding(pad).fillMaxSize().padding(horizontal = 24.dp),
@@ -254,9 +256,11 @@ private fun AudioScreen(playlist: List<String>, startIndex: Int, onBack: () -> U
                 Spacer(Modifier.height(8.dp))
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                     IconButton(onClick = { if (index > 0) index-- }, enabled = index > 0) {
-                        Icon(Icons.Filled.SkipPrevious, "Previous")
+                        Icon(Icons.Filled.SkipPrevious, stringResource(R.string.previous))
                     }
-                    IconButton(onClick = { seekBy(-10_000) }) { Icon(Icons.Filled.Replay10, "Back 10 seconds") }
+                    IconButton(onClick = { seekBy(-10_000) }) {
+                        Icon(Icons.Filled.Replay10, stringResource(R.string.back_10s))
+                    }
                     FilledIconButton(
                         onClick = {
                             if (playing) {
@@ -274,13 +278,15 @@ private fun AudioScreen(playlist: List<String>, startIndex: Int, onBack: () -> U
                     ) {
                         Icon(
                             if (playing) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-                            if (playing) "Pause" else "Play",
+                            stringResource(if (playing) R.string.pause else R.string.play),
                             Modifier.size(36.dp),
                         )
                     }
-                    IconButton(onClick = { seekBy(10_000) }) { Icon(Icons.Filled.Forward10, "Forward 10 seconds") }
+                    IconButton(onClick = { seekBy(10_000) }) {
+                        Icon(Icons.Filled.Forward10, stringResource(R.string.forward_10s))
+                    }
                     IconButton(onClick = { if (index < playlist.lastIndex) index++ }, enabled = index < playlist.lastIndex) {
-                        Icon(Icons.Filled.SkipNext, "Next")
+                        Icon(Icons.Filled.SkipNext, stringResource(R.string.next))
                     }
                 }
             }

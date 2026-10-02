@@ -1,8 +1,8 @@
 package com.litefiles.app.viewer
 
+import android.content.Context
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.consumeWindowInsets
@@ -38,12 +38,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.litefiles.app.R
+import com.litefiles.app.ui.isAppDarkTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -57,27 +62,28 @@ private sealed interface TextLoad {
     class Error(val message: String) : TextLoad
 }
 
-private fun loadText(file: File): TextLoad {
+private fun loadText(ctx: Context, file: File): TextLoad {
     return try {
         if (file.length() > MAX_EDITABLE_BYTES) {
-            return TextLoad.Error("This file is larger than 1 MB, too big for the built-in editor")
+            return TextLoad.Error(ctx.getString(R.string.error_text_too_large))
         }
         val bytes = file.readBytes()
         val probe = minOf(bytes.size, 8000)
         if ((0 until probe).any { bytes[it].toInt() == 0 }) {
-            return TextLoad.Error("This doesn't look like a text file")
+            return TextLoad.Error(ctx.getString(R.string.error_text_not_text))
         }
         TextLoad.Ok(String(bytes, Charsets.UTF_8))
     } catch (e: Exception) {
-        TextLoad.Error("Can't read this file")
+        TextLoad.Error(ctx.getString(R.string.error_text_read))
     }
 }
 
 /** View and edit text/code. UTF-8, up to 1 MB, with syntax highlighting for common languages and a line-number gutter. */
 @Composable
 fun TextEditor(path: String, onBack: () -> Unit) {
+    val ctx = LocalContext.current
     val loaded by produceState<TextLoad>(TextLoad.Loading, path) {
-        value = withContext(Dispatchers.IO) { loadText(File(path)) }
+        value = withContext(Dispatchers.IO) { loadText(ctx, File(path)) }
     }
     when (val l = loaded) {
         TextLoad.Loading -> Scaffold(topBar = { ViewerTopBar(File(path).name, onBack) }) { pad ->
@@ -102,7 +108,9 @@ private fun EditorScreen(path: String, initial: String, onBack: () -> Unit) {
     }
     var confirmExit by remember { mutableStateOf(false) }
 
-    val dark = isSystemInDarkTheme()
+    val savedMsg = stringResource(R.string.editor_saved)
+    val saveFailedMsg = stringResource(R.string.editor_save_failed)
+    val dark = isAppDarkTheme()
     val highlighter = remember(path, dark) { Highlighter(Languages.forFile(name), dark) }
     val transformation = remember(highlighter) { highlighter.asVisualTransformation() }
 
@@ -112,9 +120,9 @@ private fun EditorScreen(path: String, initial: String, onBack: () -> Unit) {
             val ok = withContext(Dispatchers.IO) { runCatching { File(path).writeText(text) }.isSuccess }
             if (ok) {
                 dirty = false
-                if (then != null) then() else snackbar.showSnackbar("Saved")
+                if (then != null) then() else snackbar.showSnackbar(savedMsg)
             } else {
-                snackbar.showSnackbar("Couldn't save the file")
+                snackbar.showSnackbar(saveFailedMsg)
             }
         }
     }
@@ -135,13 +143,15 @@ private fun EditorScreen(path: String, initial: String, onBack: () -> Unit) {
         topBar = {
             ViewerTopBar(
                 title = if (dirty) "$name •" else name,
-                subtitle = "$lineCount lines",
+                subtitle = pluralStringResource(R.plurals.editor_lines, lineCount, lineCount),
                 onBack = { if (dirty) confirmExit = true else onBack() },
                 actions = {
-                    IconButton(onClick = { save() }, enabled = dirty) { Icon(Icons.Filled.Save, "Save") }
+                    IconButton(onClick = { save() }, enabled = dirty) {
+                        Icon(Icons.Filled.Save, stringResource(R.string.action_save))
+                    }
                     ViewerMenu(path) { close ->
                         DropdownMenuItem(
-                            text = { Text("Word wrap") },
+                            text = { Text(stringResource(R.string.editor_word_wrap)) },
                             leadingIcon = { if (wrap) Icon(Icons.Filled.Check, null) },
                             onClick = { wrap = !wrap; close() },
                         )
@@ -192,21 +202,23 @@ private fun EditorScreen(path: String, initial: String, onBack: () -> Unit) {
     if (confirmExit) {
         AlertDialog(
             onDismissRequest = { confirmExit = false },
-            title = { Text("Unsaved changes") },
-            text = { Text("Save your changes to $name before leaving?") },
+            title = { Text(stringResource(R.string.editor_unsaved_title)) },
+            text = { Text(stringResource(R.string.editor_unsaved_msg, name)) },
             confirmButton = {
                 TextButton(onClick = {
                     confirmExit = false
                     save(then = onBack)
-                }) { Text("Save") }
+                }) { Text(stringResource(R.string.action_save)) }
             },
             dismissButton = {
                 Row {
-                    TextButton(onClick = { confirmExit = false }) { Text("Cancel") }
+                    TextButton(onClick = { confirmExit = false }) {
+                        Text(stringResource(R.string.action_cancel))
+                    }
                     TextButton(onClick = {
                         confirmExit = false
                         onBack()
-                    }) { Text("Discard") }
+                    }) { Text(stringResource(R.string.editor_discard)) }
                 }
             },
         )

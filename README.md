@@ -5,7 +5,8 @@ No third-party runtime libraries: only AndroidX + Compose.
 
 **Features:** home screen with categories (Images, Videos, Audio, Documents, APKs), storage overview and shortcuts (Downloads, DCIM, Pictures, …) · folder browsing · sort by name/date/size ·
 search within a folder · show/hide hidden files · multi-select · rename · delete · copy · move (with live progress and cancel) · share · details (size, path, date, folder item count) · open with other apps ·
-new folder · grid or list view with thumbnails (photos, video frames, album art, APK icons) · Recycle bin with restore (auto-empties after 30 days) · built-in viewers for images, video, audio, PDF and text/code (with syntax highlighting) · dark mode.
+new folder · grid or list view with thumbnails (photos, video frames, album art, APK icons) · Recycle bin with restore (auto-empties after 30 days) · built-in viewers for images, video, audio, PDF and text/code (with syntax highlighting) ·
+settings for theme (Light / Dark / Follow system) and language (System / English / فارسی, with full RTL layout) · fully localized UI: every string lives in `values/strings.xml` (English) and `values-fa/strings.xml` (Persian).
 
 ## Why it's fast and small
 
@@ -64,7 +65,7 @@ This permission is not accepted on Google Play without a policy exception, so di
 ## Customizing
 
 - **Package name / app id:** change `namespace` and `applicationId` in `app/build.gradle.kts` and move the `com/litefiles/app` source folders.
-- **App name:** `app/src/main/res/values/strings.xml`.
+- **App name / all UI text:** `app/src/main/res/values/strings.xml`. When you add or change a key, mirror it in `app/src/main/res/values-fa/strings.xml` — the Persian file mirrors every key 1:1 (`<string>` and `<plurals>`), with the same format specifiers.
 - **Colors:** `ui/Theme.kt` (static palette; swap in `dynamicLightColorScheme` for Material You).
 - **Dependency versions:** `gradle/libs.versions.toml` (Dependabot is pre-configured: one grouped monthly PR for Actions, monthly Gradle PRs; see `.github/dependabot.yml` for what is deliberately ignored).
 

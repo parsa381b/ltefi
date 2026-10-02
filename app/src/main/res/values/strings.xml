@@ -1,3 +1,252 @@
 <resources>
     <string name="app_name">Lite Files</string>
+
+    <!-- Permission screen -->
+    <string name="permission_title">Allow access to all files</string>
+    <string name="permission_body">Lite Files needs \"All files access\" to browse and manage your storage. Files never leave your device.</string>
+    <string name="open_settings">Open settings</string>
+
+    <!-- Generic actions (buttons, menus, icon content descriptions) -->
+    <string name="action_cancel">Cancel</string>
+    <string name="action_delete">Delete</string>
+    <string name="action_move">Move</string>
+    <string name="action_copy">Copy</string>
+    <string name="action_share">Share</string>
+    <string name="action_restore">Restore</string>
+    <string name="action_rename">Rename</string>
+    <string name="action_details">Details</string>
+    <string name="action_more">More</string>
+    <string name="action_search">Search</string>
+    <string name="action_sort">Sort</string>
+    <string name="action_back">Back</string>
+    <string name="action_refresh">Refresh</string>
+    <string name="action_close">Close</string>
+    <string name="action_save">Save</string>
+    <string name="action_create">Create</string>
+    <string name="action_empty">Empty</string>
+    <string name="action_settings">Settings</string>
+    <string name="action_select_all">Select all</string>
+    <string name="action_cancel_selection">Cancel selection</string>
+    <string name="action_open_with">Open with…</string>
+    <string name="action_open_with_other">Open with another app</string>
+
+    <!-- Home screen -->
+    <string name="home_categories">Categories</string>
+    <string name="home_shortcuts">Shortcuts</string>
+    <string name="home_storage">Storage</string>
+    <string name="storage_used">%1$s used of %2$s</string>
+    <string name="recycle_bin">Recycle bin</string>
+    <string name="trash_empty_state">Empty</string>
+    <plurals name="trash_kept_hint">
+        <item quantity="one">%1$d item · kept for 30 days</item>
+        <item quantity="other">%1$d items · kept for 30 days</item>
+    </plurals>
+
+    <!-- Categories -->
+    <string name="cat_images">Images</string>
+    <string name="cat_videos">Videos</string>
+    <string name="cat_audio">Audio</string>
+    <string name="cat_documents">Documents</string>
+    <string name="cat_apks">APKs</string>
+
+    <!-- Shortcuts (display names of the well-known folders) -->
+    <string name="sc_downloads">Downloads</string>
+    <string name="sc_dcim">DCIM</string>
+    <string name="sc_pictures">Pictures</string>
+    <string name="sc_documents">Documents</string>
+    <string name="sc_music">Music</string>
+    <string name="sc_movies">Movies</string>
+
+    <!-- Sort -->
+    <string name="sort_name">Name</string>
+    <string name="sort_date">Date</string>
+    <string name="sort_size">Size</string>
+
+    <!-- Browser -->
+    <plurals name="n_selected">
+        <item quantity="one">%1$d selected</item>
+        <item quantity="other">%1$d selected</item>
+    </plurals>
+    <string name="list_view">List view</string>
+    <string name="grid_view">Grid view</string>
+    <string name="search_in_folder">Search in this folder</string>
+    <string name="close_search">Close search</string>
+    <string name="new_folder">New folder</string>
+    <string name="show_hidden">Show hidden files</string>
+    <string name="hide_hidden">Hide hidden files</string>
+    <string name="empty_recycle_bin">Empty Recycle bin</string>
+    <string name="show_in_folder">Show in folder</string>
+    <string name="empty_results">No results</string>
+    <string name="empty_trash">Recycle bin is empty</string>
+    <string name="empty_no_files">No files found</string>
+    <string name="empty_folder">Empty folder</string>
+    <string name="deleted_at">Deleted %1$s</string>
+
+    <!-- Errors -->
+    <string name="err_open_folder">Can\'t open this folder</string>
+    <string name="err_permission">Permission denied</string>
+    <string name="err_load_category">Can\'t load %1$s</string>
+    <string name="err_open_trash">Can\'t open the Recycle bin</string>
+
+    <!-- Clipboard / paste bar -->
+    <plurals name="paste_need_folder">
+        <item quantity="one">Open a folder to %2$s %1$d item</item>
+        <item quantity="other">Open a folder to %2$s %1$d items</item>
+    </plurals>
+    <plurals name="paste_count">
+        <item quantity="one">%1$d item to %2$s</item>
+        <item quantity="other">%1$d items to %2$s</item>
+    </plurals>
+    <string name="verb_move">move</string>
+    <string name="verb_copy">copy</string>
+    <string name="move_here">Move here</string>
+    <string name="copy_here">Copy here</string>
+
+    <!-- Dialogs -->
+    <string name="dialog_new_folder">New folder</string>
+    <string name="dialog_rename">Rename</string>
+    <plurals name="confirm_delete_permanent_title">
+        <item quantity="one">Delete %1$d item permanently?</item>
+        <item quantity="other">Delete %1$d items permanently?</item>
+    </plurals>
+    <plurals name="confirm_trash_title">
+        <item quantity="one">Move %1$d item to Recycle bin?</item>
+        <item quantity="other">Move %1$d items to Recycle bin?</item>
+    </plurals>
+    <string name="confirm_delete_permanent_msg">This can\'t be undone.</string>
+    <string name="confirm_trash_msg">You can restore them from the Recycle bin for 30 days.</string>
+    <string name="confirm_empty_trash_title">Empty Recycle bin?</string>
+    <string name="confirm_empty_trash_msg">Everything in the Recycle bin will be deleted permanently.</string>
+
+    <!-- Running operations and their results -->
+    <string name="op_moving">Moving…</string>
+    <string name="op_copying">Copying…</string>
+    <string name="op_deleting">Deleting…</string>
+    <string name="op_restoring">Restoring…</string>
+    <string name="op_emptying_trash">Emptying Recycle bin…</string>
+    <string name="op_renaming">Renaming…</string>
+    <string name="op_creating_folder">Creating folder…</string>
+    <string name="op_cancelling">Cancelling…</string>
+    <string name="op_preparing">Preparing…</string>
+    <string name="msg_done">Done</string>
+    <plurals name="msg_failed_items">
+        <item quantity="one">%1$d item failed</item>
+        <item quantity="other">%1$d items failed</item>
+    </plurals>
+    <string name="msg_cancelled">Cancelled · %1$d of %2$d done</string>
+    <string name="msg_failed">Failed: %1$s</string>
+    <string name="msg_unknown_error">unknown error</string>
+    <plurals name="msg_moved_to_trash">
+        <item quantity="one">Moved %1$d item to Recycle bin</item>
+        <item quantity="other">Moved %1$d items to Recycle bin</item>
+    </plurals>
+    <plurals name="msg_deleted">
+        <item quantity="one">Deleted %1$d item</item>
+        <item quantity="other">Deleted %1$d items</item>
+    </plurals>
+    <plurals name="msg_delete_failed">
+        <item quantity="one">%1$d item couldn\'t be deleted</item>
+        <item quantity="other">%1$d items couldn\'t be deleted</item>
+    </plurals>
+    <plurals name="msg_restored">
+        <item quantity="one">Restored %1$d item</item>
+        <item quantity="other">Restored %1$d items</item>
+    </plurals>
+    <plurals name="msg_restore_failed">
+        <item quantity="one">%1$d item couldn\'t be restored</item>
+        <item quantity="other">%1$d items couldn\'t be restored</item>
+    </plurals>
+    <plurals name="msg_deleted_permanently">
+        <item quantity="one">Deleted %1$d item permanently</item>
+        <item quantity="other">Deleted %1$d items permanently</item>
+    </plurals>
+    <string name="msg_bin_emptied">Recycle bin emptied</string>
+    <string name="msg_renamed">Renamed</string>
+    <string name="msg_rename_failed">Couldn\'t rename (name invalid or already exists)</string>
+    <string name="msg_folder_created">Folder created</string>
+    <string name="msg_folder_failed">Couldn\'t create folder (name invalid or already exists)</string>
+
+    <!-- Details dialog -->
+    <string name="details_title">Details</string>
+    <string name="details_name">Name</string>
+    <string name="details_selected">Selected</string>
+    <string name="details_type">Type</string>
+    <string name="details_includes">Includes</string>
+    <string name="details_location">Location</string>
+    <string name="details_modified">Modified</string>
+    <string name="details_size">Size</string>
+    <string name="details_calculating">Calculating…</string>
+    <string name="details_items">Items</string>
+    <string name="details_contains">Contains</string>
+    <string name="type_folder">Folder</string>
+    <string name="type_file">File</string>
+    <string name="type_ext_file">%1$s file</string>
+    <plurals name="n_files">
+        <item quantity="one">%1$d file</item>
+        <item quantity="other">%1$d files</item>
+    </plurals>
+    <plurals name="n_folders">
+        <item quantity="one">%1$d folder</item>
+        <item quantity="other">%1$d folders</item>
+    </plurals>
+    <plurals name="n_items">
+        <item quantity="one">%1$d item</item>
+        <item quantity="other">%1$d items</item>
+    </plurals>
+    <plurals name="n_bytes">
+        <item quantity="one">%1$s byte</item>
+        <item quantity="other">%1$s bytes</item>
+    </plurals>
+    <string name="size_and_bytes">%1$s (%2$s)</string>
+    <string name="progress_of">%1$s of %2$s</string>
+    <plurals name="items_progress">
+        <item quantity="one">%1$d of %2$d item</item>
+        <item quantity="other">%1$d of %2$d items</item>
+    </plurals>
+
+    <!-- Viewers -->
+    <string name="viewer_file_not_found">File not found</string>
+    <string name="error_image">Can\'t show this image</string>
+    <string name="error_video">This device can\'t play this video (format or codec not supported)</string>
+    <string name="error_audio">Can\'t play this audio file</string>
+    <string name="error_pdf_no_pages">This PDF has no pages</string>
+    <string name="error_pdf_password">This PDF is password-protected</string>
+    <string name="error_pdf_open">Can\'t open this PDF</string>
+    <string name="error_text_too_large">This file is larger than 1 MB, too big for the built-in editor</string>
+    <string name="error_text_not_text">This doesn\'t look like a text file</string>
+    <string name="error_text_read">Can\'t read this file</string>
+    <string name="editor_saved">Saved</string>
+    <string name="editor_save_failed">Couldn\'t save the file</string>
+    <string name="editor_word_wrap">Word wrap</string>
+    <string name="editor_unsaved_title">Unsaved changes</string>
+    <string name="editor_unsaved_msg">Save your changes to %1$s before leaving?</string>
+    <string name="editor_discard">Discard</string>
+    <plurals name="editor_lines">
+        <item quantity="one">%1$d line</item>
+        <item quantity="other">%1$d lines</item>
+    </plurals>
+    <string name="play">Play</string>
+    <string name="pause">Pause</string>
+    <string name="next">Next</string>
+    <string name="previous">Previous</string>
+    <string name="back_10s">Back 10 seconds</string>
+    <string name="forward_10s">Forward 10 seconds</string>
+    <string name="page_of">Page %1$d / %2$d</string>
+    <string name="zoom_in">Zoom in</string>
+    <string name="fit_width">Fit to width</string>
+    <string name="toast_no_app">No app can open this file</string>
+    <string name="toast_install_unknown">Turn on \'Install unknown apps\' for Lite Files, then tap the APK again</string>
+    <string name="toast_installer_failed">Can\'t start the installer</string>
+    <string name="toast_folders_no_share">Folders can\'t be shared</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_theme">Theme</string>
+    <string name="theme_system">Follow system</string>
+    <string name="theme_light">Light</string>
+    <string name="theme_dark">Dark</string>
+    <string name="settings_language">Language</string>
+    <string name="lang_system">System default</string>
+    <string name="lang_english">English</string>
+    <string name="lang_persian">فارسی</string>
 </resources>

@@ -6,6 +6,7 @@ import android.os.Environment
 import androidx.compose.runtime.Immutable
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.litefiles.app.R
 import com.litefiles.app.data.Category
 import com.litefiles.app.data.Details
 import com.litefiles.app.data.FileItem
@@ -72,6 +73,12 @@ data class BrowserState(
 class BrowserViewModel(private val app: Application) : AndroidViewModel(app) {
 
     private val prefs = app.getSharedPreferences("lite_files", Context.MODE_PRIVATE)
+
+    /** App strings resolved here (the ViewModel has no composable context of its own). */
+    private fun str(id: Int, vararg args: Any): String = app.getString(id, *args)
+
+    private fun qty(id: Int, n: Int, vararg args: Any): String =
+        app.resources.getQuantityString(id, n, *args)
 
     private val _state = MutableStateFlow(
         BrowserState(
@@ -245,10 +252,10 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app) {
                 _state.update { it.copy(items = visible, loading = false) }
             } catch (e: IOException) {
                 all = emptyList()
-                _state.update { it.copy(items = emptyList(), loading = false, error = "Can't open this folder") }
+                _state.update { it.copy(items = emptyList(), loading = false, error = str(R.string.err_open_folder)) }
             } catch (e: SecurityException) {
                 all = emptyList()
-                _state.update { it.copy(items = emptyList(), loading = false, error = "Permission denied") }
+                _state.update { it.copy(items = emptyList(), loading = false, error = str(R.string.err_permission)) }
             }
         }
     }
@@ -267,7 +274,13 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app) {
                 throw e
             } catch (e: Exception) {
                 all = emptyList()
-                _state.update { it.copy(items = emptyList(), loading = false, error = "Can't load ${cat.label}") }
+                _state.update {
+                    it.copy(
+                        items = emptyList(),
+                        loading = false,
+                        error = str(R.string.err_load_category, str(cat.labelRes)),
+                    )
+                }
             }
         }
     }
@@ -286,7 +299,7 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app) {
                 throw e
             } catch (e: Exception) {
                 all = emptyList()
-                _state.update { it.copy(items = emptyList(), loading = false, error = "Can't open the Recycle bin") }
+                _state.update { it.copy(items = emptyList(), loading = false, error = str(R.string.err_open_trash)) }
             }
         }
     }
@@ -350,18 +363,23 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app) {
         val cb = _state.value.clipboard ?: return
         val stats = TransferStats()
         opJob = viewModelScope.launch {
-            _state.update { it.copy(op = Op(if (cb.move) "Moving…" else "Copying…", cancellable = true)) }
+            _state.update {
+                it.copy(
+                    op = Op(if (cb.move) str(R.string.op_moving) else str(R.string.op_copying), cancellable = true),
+                )
+            }
             val msg = try {
-                FileRepository.transfer(cb.paths, dir, cb.move, stats) { p ->
+                FileRepository.transfer(app, cb.paths, dir, cb.move, stats) { p ->
                     _state.update { s -> if (s.op == null) s else s.copy(op = s.op.copy(progress = p)) }
                 }
-                if (stats.failed == 0) "Done" else "${stats.failed} item(s) failed"
+                if (stats.failed == 0) str(R.string.msg_done)
+                else qty(R.plurals.msg_failed_items, stats.failed, stats.failed)
             } catch (e: CancellationException) {
                 // Deliberately not rethrown: we still have to close the dialog and refresh.
                 // Finished items stay done, the interrupted item's partial copy was already removed.
-                "Cancelled · ${stats.done} of ${stats.total} done"
+                str(R.string.msg_cancelled, stats.done, stats.total)
             } catch (e: Exception) {
-                "Failed: ${e.message ?: "unknown error"}"
+                str(R.string.msg_failed, e.message ?: str(R.string.msg_unknown_error))
             }
             _state.update {
                 it.copy(
@@ -385,7 +403,7 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app) {
         if (paths.isEmpty()) return
         detailsJob?.cancel()
         detailsJob = viewModelScope.launch {
-            val base = FileRepository.describe(paths)
+            val base = FileRepository.describe(app, paths)
             _state.update { it.copy(details = base) }
             if (base.single && !base.isDir) return@launch // a single file has nothing to scan
             val result = FileRepository.scan(paths) { r ->
@@ -406,37 +424,39 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app) {
     fun delete() {
         val paths = _state.value.selected.toList()
         val roots = roots()
-        runOp("Deleting…") {
+        runOp(str(R.string.op_deleting)) {
             val r = FileRepository.moveToTrash(paths, roots)
             when {
-                r.failed > 0 -> "${r.failed} item(s) couldn't be deleted"
-                r.deleted == 0 -> "Moved ${r.moved} item(s) to Recycle bin"
-                else -> "Deleted ${r.moved + r.deleted} item(s)"
+                r.failed > 0 -> qty(R.plurals.msg_delete_failed, r.failed, r.failed)
+                r.deleted == 0 -> qty(R.plurals.msg_moved_to_trash, r.moved, r.moved)
+                else -> qty(R.plurals.msg_deleted, r.moved + r.deleted, r.moved + r.deleted)
             }
         }
     }
 
     fun restore() {
         val paths = _state.value.selected.toList()
-        runOp("Restoring…") {
+        runOp(str(R.string.op_restoring)) {
             val failed = FileRepository.restore(paths)
-            if (failed == 0) "Restored ${paths.size} item(s)" else "$failed item(s) couldn't be restored"
+            if (failed == 0) qty(R.plurals.msg_restored, paths.size, paths.size)
+            else qty(R.plurals.msg_restore_failed, failed, failed)
         }
     }
 
     fun deleteForever() {
         val paths = _state.value.selected.toList()
-        runOp("Deleting…") {
+        runOp(str(R.string.op_deleting)) {
             val failed = FileRepository.deleteForever(paths)
-            if (failed == 0) "Deleted ${paths.size} item(s) permanently" else "$failed item(s) couldn't be deleted"
+            if (failed == 0) qty(R.plurals.msg_deleted_permanently, paths.size, paths.size)
+            else qty(R.plurals.msg_delete_failed, failed, failed)
         }
     }
 
     fun emptyBin() {
         val roots = roots()
-        runOp("Emptying Recycle bin…") {
+        runOp(str(R.string.op_emptying_trash)) {
             FileRepository.emptyBin(roots)
-            "Recycle bin emptied"
+            str(R.string.msg_bin_emptied)
         }
     }
 
@@ -454,14 +474,16 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app) {
         }
     }
 
-    fun rename(path: String, newName: String) = runOp("Renaming…") {
-        if (FileRepository.rename(File(path), newName)) "Renamed" else "Couldn't rename (name invalid or already exists)"
+    fun rename(path: String, newName: String) = runOp(str(R.string.op_renaming)) {
+        if (FileRepository.rename(File(path), newName)) str(R.string.msg_renamed)
+        else str(R.string.msg_rename_failed)
     }
 
     fun newFolder(name: String) {
         val dir = _state.value.dir ?: return
-        runOp("Creating folder…") {
-            if (FileRepository.createFolder(dir, name)) "Folder created" else "Couldn't create folder (name invalid or already exists)"
+        runOp(str(R.string.op_creating_folder)) {
+            if (FileRepository.createFolder(dir, name)) str(R.string.msg_folder_created)
+            else str(R.string.msg_folder_failed)
         }
     }
 
@@ -475,7 +497,7 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app) {
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                "Failed: ${e.message ?: "unknown error"}"
+                str(R.string.msg_failed, e.message ?: str(R.string.msg_unknown_error))
             }
             _state.update { it.copy(op = null, message = msg, selected = emptySet()) }
             refresh()

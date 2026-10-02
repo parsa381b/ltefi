@@ -1,5 +1,6 @@
 package com.litefiles.app.viewer
 
+import android.content.Context
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -9,18 +10,25 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
+import com.litefiles.app.AppSettings
+import com.litefiles.app.R
 import com.litefiles.app.ui.LiteFilesTheme
 import com.litefiles.app.util.openExternal
 import java.io.File
 
 /** Hosts all built-in viewers. One file per launch; handles config changes itself so playback/edits survive rotation. */
 class ViewerActivity : ComponentActivity() {
+    /** Applies the in-app language chosen in Settings (SYSTEM = follow the device language). */
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(AppSettings.wrap(newBase))
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         val path = intent.getStringExtra(EXTRA_PATH)
         if (path == null || !File(path).isFile) {
-            Toast.makeText(this, "File not found", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, getString(R.string.viewer_file_not_found), Toast.LENGTH_SHORT).show()
             finish()
             return
         }

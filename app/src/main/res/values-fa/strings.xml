@@ -1,0 +1,252 @@
+<resources>
+    <string name="app_name">لایت فایلز</string>
+
+    <!-- Permission screen -->
+    <string name="permission_title">اجازهٔ دسترسی کامل به فایل‌ها</string>
+    <string name="permission_body">لایت فایلز برای مرور و مدیریت حافظهٔ شما به «دسترسی کامل به فایل‌ها» نیاز دارد. فایل‌ها هرگز از دستگاه شما خارج نمی‌شوند.</string>
+    <string name="open_settings">باز کردن تنظیمات</string>
+
+    <!-- Generic actions (buttons, menus, icon content descriptions) -->
+    <string name="action_cancel">لغو</string>
+    <string name="action_delete">حذف</string>
+    <string name="action_move">انتقال</string>
+    <string name="action_copy">کپی</string>
+    <string name="action_share">اشتراک‌گذاری</string>
+    <string name="action_restore">بازیابی</string>
+    <string name="action_rename">تغییر نام</string>
+    <string name="action_details">جزئیات</string>
+    <string name="action_more">بیشتر</string>
+    <string name="action_search">جستجو</string>
+    <string name="action_sort">مرتب‌سازی</string>
+    <string name="action_back">بازگشت</string>
+    <string name="action_refresh">تازه‌سازی</string>
+    <string name="action_close">بستن</string>
+    <string name="action_save">ذخیره</string>
+    <string name="action_create">ایجاد</string>
+    <string name="action_empty">خالی کردن</string>
+    <string name="action_settings">تنظیمات</string>
+    <string name="action_select_all">انتخاب همه</string>
+    <string name="action_cancel_selection">لغو انتخاب</string>
+    <string name="action_open_with">باز کردن با…</string>
+    <string name="action_open_with_other">باز کردن با برنامهٔ دیگر</string>
+
+    <!-- Home screen -->
+    <string name="home_categories">دسته‌بندی‌ها</string>
+    <string name="home_shortcuts">میان‌برها</string>
+    <string name="home_storage">حافظه</string>
+    <string name="storage_used">%1$s از %2$s استفاده شده</string>
+    <string name="recycle_bin">سطل بازیافت</string>
+    <string name="trash_empty_state">خالی</string>
+    <plurals name="trash_kept_hint">
+        <item quantity="one">%1$d مورد · تا ۳۰ روز نگه داشته می‌شود</item>
+        <item quantity="other">%1$d مورد · تا ۳۰ روز نگه داشته می‌شود</item>
+    </plurals>
+
+    <!-- Categories -->
+    <string name="cat_images">تصاویر</string>
+    <string name="cat_videos">ویدیوها</string>
+    <string name="cat_audio">فایل‌های صوتی</string>
+    <string name="cat_documents">اسناد</string>
+    <string name="cat_apks">برنامه‌ها</string>
+
+    <!-- Shortcuts (display names of the well-known folders) -->
+    <string name="sc_downloads">دانلودها</string>
+    <string name="sc_dcim">DCIM</string>
+    <string name="sc_pictures">تصاویر</string>
+    <string name="sc_documents">اسناد</string>
+    <string name="sc_music">موسیقی</string>
+    <string name="sc_movies">فیلم‌ها</string>
+
+    <!-- Sort -->
+    <string name="sort_name">نام</string>
+    <string name="sort_date">تاریخ</string>
+    <string name="sort_size">حجم</string>
+
+    <!-- Browser -->
+    <plurals name="n_selected">
+        <item quantity="one">%1$d مورد انتخاب شده</item>
+        <item quantity="other">%1$d مورد انتخاب شده</item>
+    </plurals>
+    <string name="list_view">نمای فهرستی</string>
+    <string name="grid_view">نمای شبکه‌ای</string>
+    <string name="search_in_folder">جستجو در این پوشه</string>
+    <string name="close_search">بستن جستجو</string>
+    <string name="new_folder">پوشهٔ جدید</string>
+    <string name="show_hidden">نمایش فایل‌های پنهان</string>
+    <string name="hide_hidden">عدم نمایش فایل‌های پنهان</string>
+    <string name="empty_recycle_bin">خالی کردن سطل بازیافت</string>
+    <string name="show_in_folder">نمایش در پوشه</string>
+    <string name="empty_results">نتیجه‌ای یافت نشد</string>
+    <string name="empty_trash">سطل بازیافت خالی است</string>
+    <string name="empty_no_files">فایلی یافت نشد</string>
+    <string name="empty_folder">پوشهٔ خالی</string>
+    <string name="deleted_at">حذف‌شده: %1$s</string>
+
+    <!-- Errors -->
+    <string name="err_open_folder">امکان باز کردن این پوشه نیست</string>
+    <string name="err_permission">دسترسی غیرمجاز</string>
+    <string name="err_load_category">امکان بارگذاری %1$s نیست</string>
+    <string name="err_open_trash">امکان باز کردن سطل بازیافت نیست</string>
+
+    <!-- Clipboard / paste bar -->
+    <plurals name="paste_need_folder">
+        <item quantity="one">برای %2$s %1$d مورد، یک پوشه باز کنید</item>
+        <item quantity="other">برای %2$s %1$d مورد، یک پوشه باز کنید</item>
+    </plurals>
+    <plurals name="paste_count">
+        <item quantity="one">%1$d مورد برای %2$s</item>
+        <item quantity="other">%1$d مورد برای %2$s</item>
+    </plurals>
+    <string name="verb_move">انتقال</string>
+    <string name="verb_copy">کپی</string>
+    <string name="move_here">انتقال به اینجا</string>
+    <string name="copy_here">کپی به اینجا</string>
+
+    <!-- Dialogs -->
+    <string name="dialog_new_folder">پوشهٔ جدید</string>
+    <string name="dialog_rename">تغییر نام</string>
+    <plurals name="confirm_delete_permanent_title">
+        <item quantity="one">%1$d مورد برای همیشه حذف شود؟</item>
+        <item quantity="other">%1$d مورد برای همیشه حذف شود؟</item>
+    </plurals>
+    <plurals name="confirm_trash_title">
+        <item quantity="one">%1$d مورد به سطل بازیافت منتقل شود؟</item>
+        <item quantity="other">%1$d مورد به سطل بازیافت منتقل شود؟</item>
+    </plurals>
+    <string name="confirm_delete_permanent_msg">این عمل قابل بازگشت نیست.</string>
+    <string name="confirm_trash_msg">تا ۳۰ روز می‌توانید آن‌ها را از سطل بازیافت بازیابی کنید.</string>
+    <string name="confirm_empty_trash_title">سطل بازیافت خالی شود؟</string>
+    <string name="confirm_empty_trash_msg">همهٔ موارد داخل سطل بازیافت برای همیشه حذف خواهند شد.</string>
+
+    <!-- Running operations and their results -->
+    <string name="op_moving">در حال انتقال…</string>
+    <string name="op_copying">در حال کپی…</string>
+    <string name="op_deleting">در حال حذف…</string>
+    <string name="op_restoring">در حال بازیابی…</string>
+    <string name="op_emptying_trash">در حال خالی کردن سطل بازیافت…</string>
+    <string name="op_renaming">در حال تغییر نام…</string>
+    <string name="op_creating_folder">در حال ایجاد پوشه…</string>
+    <string name="op_cancelling">در حال لغو…</string>
+    <string name="op_preparing">در حال آماده‌سازی…</string>
+    <string name="msg_done">انجام شد</string>
+    <plurals name="msg_failed_items">
+        <item quantity="one">%1$d مورد ناموفق بود</item>
+        <item quantity="other">%1$d مورد ناموفق بود</item>
+    </plurals>
+    <string name="msg_cancelled">لغو شد · %1$d از %2$d انجام شد</string>
+    <string name="msg_failed">ناموفق: %1$s</string>
+    <string name="msg_unknown_error">خطای ناشناخته</string>
+    <plurals name="msg_moved_to_trash">
+        <item quantity="one">%1$d مورد به سطل بازیافت منتقل شد</item>
+        <item quantity="other">%1$d مورد به سطل بازیافت منتقل شد</item>
+    </plurals>
+    <plurals name="msg_deleted">
+        <item quantity="one">%1$d مورد حذف شد</item>
+        <item quantity="other">%1$d مورد حذف شد</item>
+    </plurals>
+    <plurals name="msg_delete_failed">
+        <item quantity="one">امکان حذف %1$d مورد نبود</item>
+        <item quantity="other">امکان حذف %1$d مورد نبود</item>
+    </plurals>
+    <plurals name="msg_restored">
+        <item quantity="one">%1$d مورد بازیابی شد</item>
+        <item quantity="other">%1$d مورد بازیابی شد</item>
+    </plurals>
+    <plurals name="msg_restore_failed">
+        <item quantity="one">امکان بازیابی %1$d مورد نبود</item>
+        <item quantity="other">امکان بازیابی %1$d مورد نبود</item>
+    </plurals>
+    <plurals name="msg_deleted_permanently">
+        <item quantity="one">%1$d مورد برای همیشه حذف شد</item>
+        <item quantity="other">%1$d مورد برای همیشه حذف شد</item>
+    </plurals>
+    <string name="msg_bin_emptied">سطل بازیافت خالی شد</string>
+    <string name="msg_renamed">تغییر نام انجام شد</string>
+    <string name="msg_rename_failed">امکان تغییر نام نبود (نام نامعتبر است یا تکراری)</string>
+    <string name="msg_folder_created">پوشه ایجاد شد</string>
+    <string name="msg_folder_failed">امکان ایجاد پوشه نبود (نام نامعتبر است یا تکراری)</string>
+
+    <!-- Details dialog -->
+    <string name="details_title">جزئیات</string>
+    <string name="details_name">نام</string>
+    <string name="details_selected">انتخاب‌شده</string>
+    <string name="details_type">نوع</string>
+    <string name="details_includes">شامل</string>
+    <string name="details_location">مکان</string>
+    <string name="details_modified">آخرین تغییر</string>
+    <string name="details_size">حجم</string>
+    <string name="details_calculating">در حال محاسبه…</string>
+    <string name="details_items">موارد</string>
+    <string name="details_contains">شامل است</string>
+    <string name="type_folder">پوشه</string>
+    <string name="type_file">فایل</string>
+    <string name="type_ext_file">فایل %1$s</string>
+    <plurals name="n_files">
+        <item quantity="one">%1$d فایل</item>
+        <item quantity="other">%1$d فایل</item>
+    </plurals>
+    <plurals name="n_folders">
+        <item quantity="one">%1$d پوشه</item>
+        <item quantity="other">%1$d پوشه</item>
+    </plurals>
+    <plurals name="n_items">
+        <item quantity="one">%1$d مورد</item>
+        <item quantity="other">%1$d مورد</item>
+    </plurals>
+    <plurals name="n_bytes">
+        <item quantity="one">%1$s بایت</item>
+        <item quantity="other">%1$s بایت</item>
+    </plurals>
+    <string name="size_and_bytes">%1$s (%2$s)</string>
+    <string name="progress_of">%1$s از %2$s</string>
+    <plurals name="items_progress">
+        <item quantity="one">%1$d از %2$d مورد</item>
+        <item quantity="other">%1$d از %2$d مورد</item>
+    </plurals>
+
+    <!-- Viewers -->
+    <string name="viewer_file_not_found">فایل پیدا نشد</string>
+    <string name="error_image">امکان نمایش این تصویر نیست</string>
+    <string name="error_video">این دستگاه نمی‌تواند این ویدیو را پخش کند (قالب یا کدک پشتیبانی نمی‌شود)</string>
+    <string name="error_audio">امکان پخش این فایل صوتی نیست</string>
+    <string name="error_pdf_no_pages">این PDF صفحه‌ای ندارد</string>
+    <string name="error_pdf_password">این PDF دارای رمز عبور است</string>
+    <string name="error_pdf_open">امکان باز کردن این PDF نیست</string>
+    <string name="error_text_too_large">حجم این فایل بیشتر از ۱ مگابایت است و برای ویرایشگر داخلی بزرگ محسوب می‌شود</string>
+    <string name="error_text_not_text">این فایل به نظر یک فایل متنی نیست</string>
+    <string name="error_text_read">امکان خواندن این فایل نیست</string>
+    <string name="editor_saved">ذخیره شد</string>
+    <string name="editor_save_failed">امکان ذخیرهٔ فایل نبود</string>
+    <string name="editor_word_wrap">شکستن خودکار سطرها</string>
+    <string name="editor_unsaved_title">تغییرات ذخیره‌نشده</string>
+    <string name="editor_unsaved_msg">پیش از خروج، تغییرات %1$s ذخیره شود؟</string>
+    <string name="editor_discard">نادیده گرفتن</string>
+    <plurals name="editor_lines">
+        <item quantity="one">%1$d سطر</item>
+        <item quantity="other">%1$d سطر</item>
+    </plurals>
+    <string name="play">پخش</string>
+    <string name="pause">توقف</string>
+    <string name="next">بعدی</string>
+    <string name="previous">قبلی</string>
+    <string name="back_10s">۱۰ ثانیه به عقب</string>
+    <string name="forward_10s">۱۰ ثانیه به جلو</string>
+    <string name="page_of">صفحهٔ %1$d از %2$d</string>
+    <string name="zoom_in">بزرگ‌نمایی</string>
+    <string name="fit_width">متناسب با عرض</string>
+    <string name="toast_no_app">هیچ برنامه‌ای نمی‌تواند این فایل را باز کند</string>
+    <string name="toast_install_unknown">«نصب برنامه‌های ناشناخته» را برای لایت فایلز روشن کنید، سپس دوباره روی فایل APK بزنید</string>
+    <string name="toast_installer_failed">امکان اجرای نصب‌کننده نیست</string>
+    <string name="toast_folders_no_share">پوشه‌ها قابل اشتراک‌گذاری نیستند</string>
+
+    <!-- Settings -->
+    <string name="settings_title">تنظیمات</string>
+    <string name="settings_theme">پوسته</string>
+    <string name="theme_system">مطابق سیستم</string>
+    <string name="theme_light">روشن</string>
+    <string name="theme_dark">تاریک</string>
+    <string name="settings_language">زبان</string>
+    <string name="lang_system">پیش‌فرض سیستم</string>
+    <string name="lang_english">English</string>
+    <string name="lang_persian">فارسی</string>
+</resources>

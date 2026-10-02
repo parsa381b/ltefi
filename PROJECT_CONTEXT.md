@@ -8,7 +8,7 @@ Android file manager (Samsung "My Files" look and feel), Kotlin + Jetpack Compos
 fast folder loading, low memory, no lag on large directories, small APK. Single module, single activity, no DI, no DB, no navigation library, no image library.
 
 **Features:** home screen (categories: Images/Videos/Audio/Documents/APKs, shortcuts, storage volumes with usage bars), folder browsing, sort (name/date/size, asc/desc, folders first),
-in-folder search, hidden-file toggle, multi-select (long-press), rename, delete, copy, move (clipboard + "paste here" bar, live progress + cancel), list/grid view with image/video thumbnails, Recycle bin (restore, empty, 30-day auto-purge), details dialog (size, path, modified, folder item counts), share (files only), install APKs (tap an APK), "Show in folder" for category files, built-in viewers (image with zoom/swipe, video, audio, PDF, text editor with syntax highlighting), open with external app, new folder, scroll-position restore when going up, dark mode.
+in-folder search, hidden-file toggle, multi-select (long-press), rename, delete, copy, move (clipboard + "paste here" bar, live progress + cancel), list/grid view with image/video thumbnails, Recycle bin (restore, empty, 30-day auto-purge), details dialog (size, path, modified, folder item counts), share (files only), install APKs (tap an APK), "Show in folder" for category files, built-in viewers (image with zoom/swipe, video, audio, PDF, text editor with syntax highlighting), open with external app, new folder, scroll-position restore when going up, Settings (theme: system/light/dark, language: system/English/Persian) with full Persian localization and RTL.
 
 **Status:** builds successfully on GitHub Actions and has been installed and run on the owner's phone (repo: github.com/parsa381b/ltefi). Code is written without a local SDK, so every change is verified only by the CI build and on-device testing. Still to do: test with a very large folder and on an SD card.
 
@@ -27,16 +27,21 @@ gradle/wrapper/gradle-wrapper.properties   (wrapper jar/scripts NOT committed; r
 app/build.gradle.kts             R8 + resource shrink, optional env-var signing, packaging excludes
 CHANGELOG.md                     per-version record of every change (see "Changelog policy")
 app/src/main/AndroidManifest.xml MANAGE_EXTERNAL_STORAGE, REQUEST_INSTALL_PACKAGES, ViewerActivity, FileProvider
+app/src/main/res/values/strings.xml    every user-facing string (English = default) + plurals
+app/src/main/res/values-fa/strings.xml Persian translation, 1:1 key-for-key with values/
 app/src/main/res/xml/file_paths.xml   FileProvider root-path (all storage)
 app/src/main/java/com/litefiles/app/
-  MainActivity.kt                edge-to-edge, hosts App(vm), calls vm.onResume()
-  data/Category.kt               Category enum (label + Kind for icon/color)
+  LiteFilesApp.kt              Application (manifest android:name): applies the chosen locale in attachBaseContext, loads settings
+  AppSettings.kt               ThemeMode + LanguageMode: Compose state, SharedPreferences, and the locale wrapper used by both contexts
+  MainActivity.kt                edge-to-edge, attachBaseContext applies the locale, hosts App(vm), calls vm.onResume()
+  data/Category.kt               Category enum (labelRes + Kind for icon/color)
   data/Transfer.kt               Progress + TransferStats (copy/move progress and tally)
   data/Details.kt                Details + ScanResult (Details dialog model)
   data/FileItem.kt               tiny immutable entry + Kind enum + extension->Kind map
   data/FileRepository.kt         ALL disk I/O (list, sort, category via MediaStore, volumes, shortcuts, recycle bin, rename, createFolder, transfer, describe, scan)
   ui/BrowserViewModel.kt         BrowserState + Clipboard + BrowserViewModel (single StateFlow)
   ui/App.kt                      root: permission screen / home / browser, snackbar, busy dialog
+  ui/SettingsDialog.kt           Settings screen (Theme and Language radio options)
   ui/HomeScreen.kt               categories + shortcuts tile grid + storage cards
   ui/BrowserScreen.kt            top bars (normal/selection/search), bottom bars (selection actions / paste), FileList
   ui/Components.kt               FileRow, NameDialog, ConfirmDialog
@@ -52,7 +57,7 @@ app/src/main/java/com/litefiles/app/
   viewer/TextEditor.kt           BasicTextField editor, line numbers, save
   viewer/SyntaxHighlighter.kt    Lang table + linear single-pass highlighter
   ui/FileIcons.kt                Kind -> icon/color, shortcut icons
-  ui/Theme.kt                    static light/dark palettes
+  ui/Theme.kt                    static light/dark palettes + isAppDarkTheme() (Theme setting)
   util/Intents.kt                open file (APK -> installer, viewable types -> built-in viewers, rest -> other apps via `openExternal`), share files, request All-files-access
 ```
 
@@ -83,7 +88,7 @@ Compose UI  --events-->  BrowserViewModel  --suspend calls-->  FileRepository (D
 8. **Copy via `FileChannel.transferTo`**, move via `renameTo` with copy+delete fallback across volumes; partial copies are cleaned up on failure.
 9. **Static theme, not dynamic color,** to match Samsung's neutral look; one-line swap documented in `Theme.kt`.
 10. **CI without Gradle wrapper jar:** `gradle/actions/setup-gradle` installs Gradle 8.14.3 so the repo has no binary files. Release is signed with the debug key unless keystore env vars/secrets are supplied.
-11. **UI strings are hardcoded English** (only `app_name` is a resource) to keep things small. Extract to `strings.xml` if localization is needed.
+11. **Every UI string lives in `res/values/strings.xml`** (English, the default) with a 1:1 Persian twin in `res/values-fa/strings.xml` (165 keys, counts via `<plurals>`). Composables read them with `stringResource`/`pluralStringResource`; non-UI code (`BrowserViewModel`, `FileRepository`, toasts, viewer loaders) resolves them with `Context.getString`. New strings must be added to **both** files in the same change.
 
 12. **Categories read the MediaStore index** (`MediaStore.Files`, one query, all volumes) instead of crawling the disk: instant even with 100k files. Images/Videos/Audio use `media_type`; Documents use a MIME allow-list (+ `text/*`); APKs match the APK MIME or `.apk` name. Entries are verified with one `File.isFile` stat each to hide stale index rows. Uses the deprecated-but-working `DATA` column (valid because we hold All-files access).
 13. **Category sort is temporary:** entering a category saves the folder sort (`savedSort`) and switches to date-descending; leaving restores it. Sort changes made inside a category are not remembered.
@@ -108,7 +113,12 @@ Compose UI  --events-->  BrowserViewModel  --suspend calls-->  FileRepository (D
 27. **Text editor:** `BasicTextField` + a `VisualTransformation` that returns an `AnnotatedString` from `Highlighter` (hand-written single-pass lexer, no regex; result cached so cursor moves don't rescan). Language profiles are data (`Lang`): keywords, comment/quote rules, markup flag. Limits keep typing smooth: files up to 1 MB, highlighting off above 200,000 chars, UTF-8 only, binary files (NUL bytes) refused. Word-wrap off shows a line-number gutter (same font/line height, so lines align); wrap on hides it.
 28. **Audio player:** `MediaPlayer` + `AudioFocusRequest` (pauses when another app takes audio), advances through the playlist, pauses on `ON_STOP`. No foreground service or media notification on purpose (lightweight): playback stops when you leave the screen.
 
+29. **Per-app locale without AppCompat:** `AppSettings.wrap(base)` builds a `Configuration` (`setLocale` → `createConfigurationContext`) and is called from `attachBaseContext` of `LiteFilesApp`, `MainActivity` and `ViewerActivity`; it also calls `Locale.setDefault` so `DateFormat`/`NumberFormat` follow the choice even though they never touch resources (Persian therefore gets Persian digits, and the calendar/number patterns ICU resolves for that locale). `SYSTEM` returns the base context untouched, so the app follows the device language until the user picks one. Picking a language writes the pref and calls `activity.recreate()`; `ViewerActivity` keeps running in the background and picks up the new locale on its next launch.
+
+30. **Theme setting is snapshot state:** `AppSettings.themeMode` is a `mutableStateOf`, so `isAppDarkTheme()` (used by `LiteFilesTheme` and the text editor's highlighter) recomposes immediately without a restart; `SYSTEM` delegates to `isSystemInDarkTheme()`. Entry points: gear icon on the home top bar and **More → Settings** in the browser. Both settings persist in the existing `lite_files` SharedPreferences (`theme_mode`, `language`), same file as the view mode.
+
 ## Known limitations / ideas for next steps
+- Localization: only English and Persian are translated (new locale = a `values-xx/strings.xml` with all 165 keys); the launcher label and the system Settings entry always follow the device language, not the in-app choice, and an already-open `ViewerActivity` only picks up a language change on its next launch.
 - Viewers: no background audio or media notification; video/audio formats depend on the device (no AVI); PDF has no pinch zoom, search or text selection and no password entry; text editor has no find/replace, no undo button (keyboard undo only), only UTF-8, max 1 MB; image viewer can't show SVG (opens elsewhere) and HEIC/AVIF depend on the device; "Open with…" is in every viewer menu as the escape hatch.
 - Bin limits: files deleted by other apps don't go to the bin; it is per volume (not shared across SD cards); it holds storage until emptied or 30 days pass; a failed rename into the bin reports an error instead of deleting permanently; the bin is visible as a normal folder if "Show hidden files" is on.
 - Grid view has no option to change tile size; the top bar is crowded (4 icons) on very narrow screens.
@@ -124,6 +134,7 @@ Compose UI  --events-->  BrowserViewModel  --suspend calls-->  FileRepository (D
 
 ## Conventions
 - All disk work in `FileRepository` on `Dispatchers.IO`; UI never touches `java.io` except building `File(path)` for intents.
+- No hardcoded UI text: new user-facing strings go into `values/strings.xml` **and** `values-fa/strings.xml` in the same change (see decision 11).
 - Add dependencies only via `libs.versions.toml`; justify each one against APK size and startup cost.
 - State changes only through `BrowserViewModel`; composables receive `BrowserState` and call VM methods.
 
@@ -133,4 +144,4 @@ Compose UI  --events-->  BrowserViewModel  --suspend calls-->  FileRepository (D
 - Each version lists what changed, grouped as Added / Changed / Fixed / Removed / Docs / Build/CI, one clear line per change.
 - SemVer: patch = fixes/docs, minor = new features, major = breaking changes (e.g. min SDK raise).
 - If a change affects architecture or a design decision, also update the relevant section of this file.
-- Current version: **1.6.0**
+- Current version: **1.7.0**
